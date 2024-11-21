@@ -267,7 +267,7 @@ install_bbr() {
 echo -e "${green}Running...${plain}"
 install_base
 install_x-ui $1
-install_bbr
+#install_bbr
 cronjab
 cronjabip
 cronjabstatus
