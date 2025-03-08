@@ -128,10 +128,10 @@ def create_default_config():
     if not os.path.exists(CONFIG_PATH):
         config = configparser.ConfigParser()
         config['SERVER'] = {
-            'Port': '800',
+            'Port': '8008',
             'XUIEndpoint': 'http://127.0.0.1:80/panel',
-            'XUIUsername': 'admin',
-            'XUIPassword': 'admin',
+            'XUIUsername': 'zahed',
+            'XUIPassword': 'zahed2341',
             'AllowedIPs': 'WHITELIST_PLACEHOLDER',
             'CheckRealIP': 'True',
             'AutoRestartEnabled': 'True',
