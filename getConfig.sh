@@ -1,627 +1,336 @@
 #!/bin/bash
 
-# رنگ‌های ترمینال
-RED='\033[0;31m'
+# XUI Manager Automated Setup Script
+# This script installs all required dependencies and sets up the service
+
+# Text colors
 GREEN='\033[0;32m'
-YELLOW='\033[0;33m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
 BLUE='\033[0;34m'
-PURPLE='\033[0;35m'
-NC='\033[0m' # بدون رنگ
+NC='\033[0m' # No Color
 
-# نمایش لوگو
-echo -e "${BLUE}"
-echo "===================================================================="
-echo " __      _____  _____               ___           _        _ _"
-echo " \ \    / /__ \|  __ \             |_ _|_ __  ___| |_ __ _| | | ___ _ __"
-echo "  \ \  / /   ) | |__) |__ _ _   _    | || '_ \/ __| __/ _\` | | |/ _ \ '__|"
-echo "   \ \/ /   / /|  _  // _\` | | | |   | || | | \__ \ || (_| | | |  __/ |"
-echo "    \  /   / /_| | \ \ (_| | |_| |  |___|_| |_|___/\__\__,_|_|_|\___|_|"
-echo "     \/   |____|_|  \_\__,_|\__, |"
-echo "                             __/ |"
-echo "                            |___/"
-echo "===================================================================="
-echo -e "${NC}"
+echo -e "${BLUE}====================================================${NC}"
+echo -e "${BLUE}       3x-ui XUI Manager Automatic Setup           ${NC}"
+echo -e "${BLUE}====================================================${NC}"
 
-# چک کردن دسترسی روت
-if [ "$(id -u)" -ne 0 ]; then
-    echo -e "${RED}[خطا] این اسکریپت باید با دسترسی روت اجرا شود${NC}"
-    exit 1
+# Check if script is run as root
+if [ "$EUID" -ne 0 ]; then
+  echo -e "${RED}Please run this script as root or with sudo${NC}"
+  exit 1
 fi
 
-# دریافت سیستم عامل
-check_os() {
-    if [ -f /etc/os-release ]; then
-        . /etc/os-release
-        OS=$ID
-        VERSION=$VERSION_ID
-    else
-        echo -e "${RED}سیستم عامل شما پشتیبانی نمی‌شود${NC}"
-        exit 1
-    fi
-}
+# Create install directory
+INSTALL_DIR="/opt/xui-manager"
+echo -e "${YELLOW}Creating installation directory at ${INSTALL_DIR}...${NC}"
+mkdir -p $INSTALL_DIR
 
-# نصب پیش‌نیازها
-install_dependencies() {
-    echo -e "${YELLOW}[اطلاعات] در حال نصب پیش‌نیازها...${NC}"
-    
-    if [ "$OS" == "ubuntu" ] || [ "$OS" == "debian" ]; then
-        apt update -y
-        apt install -y python3 python3-pip iptables curl wget git
-    elif [ "$OS" == "centos" ] || [ "$OS" == "rhel" ]; then
-        yum update -y
-        yum install -y python3 python3-pip iptables curl wget git
-    else
-        echo -e "${RED}[خطا] سیستم عامل شما پشتیبانی نمی‌شود${NC}"
-        exit 1
-    fi
-    
-    # نصب ماژول‌های پایتون
-    pip3 install flask requests python-iptables
-    
-    echo -e "${GREEN}[موفقیت] پیش‌نیازها با موفقیت نصب شدند${NC}"
-}
+# Check Python version
+echo -e "${YELLOW}Checking Python version...${NC}"
+if command -v python3 &>/dev/null; then
+  PYTHON_CMD="python3"
+else
+  if command -v python &>/dev/null; then
+    PYTHON_CMD="python"
+  else
+    echo -e "${RED}Python is not installed. Installing Python 3...${NC}"
+    apt update
+    apt install -y python3 python3-pip
+    PYTHON_CMD="python3"
+  fi
+fi
 
-# تنظیم لیست آی‌پی‌های سفید
-setup_whitelist() {
-    echo -e "${YELLOW}[اطلاعات] در حال تنظیم لیست آی‌پی‌های سفید...${NC}"
-    
-    # فایل لیست سفید
-    WHITELIST_FILE="whitelist.txt"
-    
-    # اگر فایل موجود است، آن را بخوانیم
-    if [ -f "$WHITELIST_FILE" ]; then
-        echo -e "${YELLOW}فایل لیست سفید یافت شد${NC}"
-        WHITELIST=$(cat "$WHITELIST_FILE")
-    else
-        # در غیر این صورت از کاربر بپرسیم
-        echo -e "${YELLOW}فایل لیست سفید یافت نشد. لطفاً آی‌پی‌های سفید را وارد کنید (با کاما جدا کنید):${NC}"
-        read -p "لیست آی‌پی‌های سفید: " WHITELIST
-        
-        # ذخیره در فایل برای استفاده‌های بعدی
-        echo "$WHITELIST" > "$WHITELIST_FILE"
-    fi
-    
-    echo -e "${GREEN}[موفقیت] لیست آی‌پی‌های سفید تنظیم شد${NC}"
-}
+echo -e "${GREEN}Using Python command: $PYTHON_CMD${NC}"
 
-# ایجاد فایل پایتون
-create_python_script() {
-    echo -e "${YELLOW}[اطلاعات] در حال ایجاد اسکریپت پایتون...${NC}"
-    
-    cat > v2ray_config_server.py << 'EOF'
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+# Install required packages
+echo -e "${YELLOW}Installing required packages...${NC}"
+$PYTHON_CMD -m pip install flask requests
 
-import os
-import sys
-import json
-import logging
-import ipaddress
-import subprocess
-import threading
-import time
-import socket
+# Create the Python script
+echo -e "${YELLOW}Creating XUI Manager Python script...${NC}"
+cat > $INSTALL_DIR/xui_manager.py << 'EOL'
 import requests
-from flask import Flask, jsonify, request, abort
-from functools import wraps
-import iptables
-from werkzeug.serving import make_server
-import configparser
-import signal
+import json
+import urllib.parse
+import re
+import socket
+from flask import Flask, jsonify
 
-# تنظیم لاگینگ
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler("/var/log/v2ray_config_server.log"),
-        logging.StreamHandler()
-    ]
-)
-logger = logging.getLogger("v2ray_config_server")
-
-# مسیر پیکربندی
-CONFIG_PATH = '/etc/v2ray_config_server.ini'
-
-# ایجاد فایل پیکربندی اگر وجود نداشته باشد
-def create_default_config():
-    if not os.path.exists(CONFIG_PATH):
-        config = configparser.ConfigParser()
-        config['SERVER'] = {
-            'Port': '8008',
-            'XUIEndpoint': 'http://127.0.0.1:80/panel',
-            'XUIUsername': 'zahed',
-            'XUIPassword': 'zahed2341',
-            'AllowedIPs': 'WHITELIST_PLACEHOLDER',
-            'CheckRealIP': 'True',
-            'AutoRestartEnabled': 'True',
-            'APIEndpoint': '/api/configs'
-        }
-        
-        with open(CONFIG_PATH, 'w') as f:
-            config.write(f)
-        
-        # تنظیم دسترسی فایل
-        os.chmod(CONFIG_PATH, 0o600)
-        
-        logger.info(f"فایل پیکربندی پیش‌فرض در {CONFIG_PATH} ایجاد شد")
-
-# خواندن تنظیمات
-def read_config():
-    create_default_config()
-    
-    config = configparser.ConfigParser()
-    config.read(CONFIG_PATH)
-    
-    return {
-        'port': int(config['SERVER']['Port']),
-        'xui_endpoint': config['SERVER']['XUIEndpoint'],
-        'xui_username': config['SERVER']['XUIUsername'],
-        'xui_password': config['SERVER']['XUIPassword'],
-        'allowed_ips': config['SERVER']['AllowedIPs'].split(','),
-        'check_real_ip': config['SERVER'].getboolean('CheckRealIP'),
-        'auto_restart': config['SERVER'].getboolean('AutoRestartEnabled'),
-        'api_endpoint': config['SERVER']['APIEndpoint']
-    }
-
-# کلاس سرور وب
-class ConfigServer:
+class XuiManager:
     def __init__(self):
-        self.config = read_config()
-        self.app = Flask(__name__)
-        self.setup_routes()
-        self.server = None
+        # Fixed credentials as per your requirements
+        self.username = "zahed"
+        self.password = "zahed2341"
+        self.port = 80
+        self.ssl = False
+        self.server_ip = "127.0.0.1"  # Always use localhost
+        self.cookie = self.login_and_get_cookie()
         
-        # ذخیره سشن XUI
-        self.xui_session = None
-        self.xui_token = None
-        self.last_login_time = 0
+    def login_and_get_cookie(self):
+        """Login to 3x-ui panel and get authentication cookie"""
+        protocol = "https" if self.ssl else "http"
+        url = f"{protocol}://{self.server_ip}:{self.port}/login"
         
-        # لیست آی‌پی‌های مجاز (به‌روزرسانی دوره‌ای)
-        self.authorized_ips = set(self.config['allowed_ips'])
-        
-        # مسیر مربوط به CDN‌ها برای تشخیص آی‌پی واقعی
-        self.cdn_networks = self.load_cdn_networks()
-    
-    def load_cdn_networks(self):
-        """بارگذاری لیست شبکه‌های CDN برای جلوگیری از دسترسی"""
-        cdn_networks = []
         try:
-            # CloudFlare
-            cloudflare_ips = requests.get('https://www.cloudflare.com/ips-v4').text.strip().split('\n')
-            for ip_range in cloudflare_ips:
-                cdn_networks.append(ipaddress.ip_network(ip_range))
+            response = requests.post(
+                url,
+                data=f"username={self.username}&password={self.password}",
+                timeout=(10, 30)
+            )
             
-            # برای شبکه‌های دیگر مانند Arvan Cloud می‌توانید منابع مشابه را اضافه کنید
-            arvan_networks = [
-                '185.143.232.0/22',
-                '92.114.16.0/20',
-                '2.146.0.0/20',
-                # سایر محدوده‌های آروان را می‌توانید اضافه کنید
-            ]
+            # Extract cookie from response
+            cookies = response.cookies
+            if '3x-ui' in cookies:
+                return cookies['3x-ui']
             
-            for ip_range in arvan_networks:
-                cdn_networks.append(ipaddress.ip_network(ip_range))
-                
+            # Try to extract from headers if not in cookies object
+            cookie_header = response.headers.get('Set-Cookie')
+            if cookie_header:
+                match = re.search(r'3x-ui=([^;]*)', cookie_header)
+                if match:
+                    return match.group(1)
+                    
+            return None
         except Exception as e:
-            logger.error(f"خطا در بارگذاری لیست شبکه‌های CDN: {e}")
-        
-        logger.info(f"تعداد {len(cdn_networks)} شبکه CDN برای فیلتر کردن بارگذاری شد")
-        return cdn_networks
-    
-    def is_cdn_ip(self, ip_addr):
-        """بررسی اینکه آیا آی‌پی متعلق به یک CDN است یا خیر"""
-        try:
-            ip = ipaddress.ip_address(ip_addr)
-            for network in self.cdn_networks:
-                if ip in network:
-                    return True
-            return False
-        except:
-            return True  # در صورت خطا، به طور پیش‌فرض آی‌پی را مشکوک تلقی می‌کنیم
-    
-    def get_real_ip(self):
-        """گرفتن آی‌پی واقعی کاربر با در نظر گرفتن هدرهای مختلف"""
-        if not request.remote_addr:
+            print(f"Login error: {str(e)}")
             return None
             
-        ip = request.remote_addr
+    def fetch_inbounds_list(self):
+        """Fetch inbounds list from 3x-ui panel"""
+        protocol = "https" if self.ssl else "http"
+        url = f"{protocol}://{self.server_ip}:{self.port}/panel/api/inbounds/list"
         
-        # بررسی اگر آی‌پی از CDN باشد
-        if self.config['check_real_ip'] and self.is_cdn_ip(ip):
-            # تلاش برای استخراج آی‌پی واقعی از هدرها
-            headers_to_check = [
-                'X-Forwarded-For',
-                'X-Real-IP',
-                'CF-Connecting-IP',
-                'True-Client-IP'
-            ]
-            
-            for header in headers_to_check:
-                if header in request.headers:
-                    # گرفتن اولین آی‌پی در لیست (معمولاً آی‌پی اصلی کاربر)
-                    potential_ip = request.headers[header].split(',')[0].strip()
-                    
-                    try:
-                        # تست اعتبار آی‌پی
-                        ipaddress.ip_address(potential_ip)
-                        if not self.is_cdn_ip(potential_ip):
-                            ip = potential_ip
-                            break
-                    except:
-                        continue
-        
-        return ip
-    
-    def setup_routes(self):
-        """تنظیم مسیرهای API"""
-        @self.app.route(self.config['api_endpoint'], methods=['GET'])
-        def get_configs():
-            # بررسی آی‌پی کاربر
-            client_ip = self.get_real_ip()
-            
-            if not client_ip:
-                abort(403, description="آی‌پی شما قابل شناسایی نیست")
-            
-            # بررسی اینکه آیا آی‌پی در لیست مجاز است
-            if client_ip not in self.authorized_ips:
-                # اضافه کردن آی‌پی به لیست مجاز و فایروال
-                self.add_authorized_ip(client_ip)
-                logger.info(f"آی‌پی جدید {client_ip} به لیست مجاز اضافه شد")
-            
-            # دریافت کانفیگ‌ها از XUI
-            try:
-                configs = self.fetch_xui_configs()
-                return jsonify(configs)
-            except Exception as e:
-                logger.error(f"خطا در دریافت کانفیگ‌ها: {e}")
-                return jsonify({"error": "خطا در دریافت کانفیگ‌ها"}), 500
-    
-    def add_authorized_ip(self, ip):
-        """اضافه کردن آی‌پی به لیست مجاز و اعمال قوانین فایروال"""
-        if ip in self.authorized_ips:
-            return
-            
-        self.authorized_ips.add(ip)
-        
-        # اعمال قوانین فایروال برای این آی‌پی
         try:
-            # اجازه اتصال به پورت V2Ray (معمولاً 1080، 1081، و غیره)
-            v2ray_ports = self.get_v2ray_ports()
-            
-            for port in v2ray_ports:
-                subprocess.run([
-                    'iptables', '-A', 'INPUT', '-s', ip, '-p', 'tcp', 
-                    '--dport', str(port), '-j', 'ACCEPT'
-                ], check=True)
-                
-                subprocess.run([
-                    'iptables', '-A', 'INPUT', '-s', ip, '-p', 'udp', 
-                    '--dport', str(port), '-j', 'ACCEPT'
-                ], check=True)
-            
-            # ذخیره تنظیمات فایروال
-            subprocess.run(['iptables-save'], check=True)
-            
-            # به‌روزرسانی فایل پیکربندی
-            self.update_allowed_ips_in_config()
-            
-        except Exception as e:
-            logger.error(f"خطا در تنظیم قوانین فایروال برای آی‌پی {ip}: {e}")
-    
-    def update_allowed_ips_in_config(self):
-        """به‌روزرسانی لیست آی‌پی‌های مجاز در فایل پیکربندی"""
-        try:
-            config = configparser.ConfigParser()
-            config.read(CONFIG_PATH)
-            
-            config['SERVER']['AllowedIPs'] = ','.join(self.authorized_ips)
-            
-            with open(CONFIG_PATH, 'w') as f:
-                config.write(f)
-                
-            logger.info("لیست آی‌پی‌های مجاز در فایل پیکربندی به‌روزرسانی شد")
-        except Exception as e:
-            logger.error(f"خطا در به‌روزرسانی فایل پیکربندی: {e}")
-    
-    def get_v2ray_ports(self):
-        """دریافت پورت‌های V2Ray از طریق API یا فایل پیکربندی"""
-        ports = [1080, 1081]  # پورت‌های پیش‌فرض
-        
-        # در اینجا می‌توان کد استخراج پورت‌های واقعی از XUI را پیاده‌سازی کرد
-        # برای مثال، با استفاده از API دریافت پورت‌ها یا خواندن فایل کانفیگ
-        
-        return ports
-    
-    def login_to_xui(self):
-        """ورود به پنل 3x-ui محلی و دریافت توکن"""
-        if (time.time() - self.last_login_time) < 3600:  # اگر کمتر از یک ساعت گذشته باشد
-            return self.xui_session, self.xui_token
-            
-        try:
-            session = requests.Session()
-            
-            # برای 3x-ui باید از فرم استفاده کرد (Form-data)
-            login_data = {
-                "username": self.config['xui_username'],
-                "password": self.config['xui_password']
+            headers = {
+                'Accept': 'application/json',
+                'Cookie': f'3x-ui={self.cookie}'
             }
             
-            # آدرس لاگین 3x-ui محلی
-            login_url = f"{self.config['xui_endpoint'].split('/panel')[0]}/login"
-            
-            response = session.post(
-                login_url,
-                data=login_data,  # استفاده از data به جای json
-                timeout=10
+            response = requests.get(
+                url,
+                headers=headers,
+                timeout=(10, 30),
+                verify=False if self.ssl else True
             )
             
             if response.status_code == 200:
-                # بررسی ورود موفق با استفاده از سشن
-                self.xui_session = session
-                self.xui_token = ""  # 3x-ui از کوکی برای احراز هویت استفاده می‌کند
-                self.last_login_time = time.time()
-                logger.info("ورود موفق به پنل 3x-ui محلی")
-                return session, self.xui_token
+                return self.generate_vless_configs(response.text)
             
-            logger.error(f"خطا در ورود به 3x-ui محلی: کد وضعیت {response.status_code}")
-            return None, None
-            
+            return json.dumps({'success': False, 'message': 'Invalid response'})
         except Exception as e:
-            logger.error(f"خطا در اتصال به 3x-ui محلی: {e}")
-            return None, None
-    
-    def fetch_xui_configs(self):
-        """دریافت کانفیگ‌های V2Ray از 3x-ui"""
-        session, token = self.login_to_xui()
-        
-        if not session:
-            raise Exception("خطا در اتصال به پنل 3x-ui")
-        
-        # مسیر API برای 3x-ui
-        try:
-            # استفاده از آدرس دقیق API مطابق با مستندات 3x-ui
-            api_url = f"{self.config['xui_endpoint']}/api/inbounds/list"
+            return json.dumps({'success': False, 'message': f'Error: {str(e)}'})
             
-            headers = {
-                'Accept': 'application/json'
-            }
+    def generate_vless_configs(self, json_response):
+        """Generate VLESS configs from inbounds response"""
+        try:
+            response = json.loads(json_response)
+            configs = []
+            
+            for inbound in response.get('obj', []):
+                settings = json.loads(inbound.get('settings', '{}'))
+                stream_settings = json.loads(inbound.get('streamSettings', '{}'))
                 
-            response = session.get(api_url, headers=headers)
-            
-            if response.status_code == 200:
-                configs = response.json()
-                return self.process_configs(configs)
-            else:
-                logger.error(f"خطا در دریافت کانفیگ‌ها: {response.status_code} - {response.text}")
-                raise Exception(f"خطا در دریافت کانفیگ‌ها: {response.status_code}")
-                
+                if not settings.get('clients'):
+                    continue
+                    
+                for client in settings['clients']:
+                    config = self.build_vless_config(client, inbound, stream_settings)
+                    if config:
+                        configs.append(config)
+                        
+            return json.dumps({
+                'success': True,
+                'configs': configs
+            })
         except Exception as e:
-            logger.error(f"خطا در درخواست کانفیگ‌ها: {e}")
-            raise
-    
-    def process_configs(self, configs):
-        """پردازش کانفیگ‌های V2Ray و فرمت‌دهی آن‌ها برای 3x-ui"""
-        # ساختار داده‌های 3x-ui را بررسی می‌کنیم
-        
-        if 'obj' in configs and isinstance(configs['obj'], list):
-            return configs['obj']
-        elif 'success' in configs and 'obj' in configs:
-            # فرمت خاص 3x-ui
-            if configs['success'] and isinstance(configs['obj'], list):
-                return configs['obj']
-            else:
-                return configs
-        elif isinstance(configs, list):
-            return configs
-        else:
-            return {"raw_data": configs}
-    
-    def start(self):
-        """شروع سرور وب"""
+            return json.dumps({'success': False, 'message': f'Error generating configs: {str(e)}'})
+            
+    def build_vless_config(self, client, inbound, stream_settings):
+        """Build VLESS config for a client"""
         try:
-            self.server = make_server('0.0.0.0', self.config['port'], self.app)
-            logger.info(f"سرور روی پورت {self.config['port']} در حال اجرا است")
-            self.server.serve_forever()
+            config = f"vless://{client['id']}@{self.server_ip}:{inbound['port']}?"
+            params = {'type': stream_settings.get('network', 'tcp')}
+            
+            self.handle_security_settings(stream_settings, params)
+            
+            query_string = urllib.parse.urlencode(params)
+            remark = self.generate_remark(inbound.get('remark', ''), client.get('email', ''))
+            
+            return f"{config}{query_string}#{urllib.parse.quote(remark)}"
         except Exception as e:
-            logger.critical(f"خطا در اجرای سرور: {e}")
-            sys.exit(1)
-    
-    def stop(self):
-        """توقف سرور وب"""
-        if self.server:
-            self.server.shutdown()
-            logger.info("سرور متوقف شد")
-
-# سرویس سیستمی برای اجرای خودکار
-class ConfigServerService:
-    def __init__(self):
-        self.server = ConfigServer()
+            print(f"Error building config: {str(e)}")
+            return None
+            
+    def handle_security_settings(self, stream_settings, params):
+        """Process security settings"""
+        security = stream_settings.get('security', 'none')
         
-    def setup_service(self):
-        """تنظیم سرویس سیستمی"""
-        service_path = '/etc/systemd/system/v2ray_config_server.service'
+        if security == 'none':
+            self.handle_none_security(stream_settings, params)
+        elif security == 'reality':
+            self.handle_reality_security(stream_settings, params)
+            
+    def handle_none_security(self, stream_settings, params):
+        """Process 'none' security settings"""
+        if (stream_settings.get('network') == 'tcp' and
+            stream_settings.get('tcpSettings', {}).get('header', {}).get('type') == 'http'):
+            
+            tcp_settings = stream_settings.get('tcpSettings', {})
+            headers = tcp_settings.get('header', {}).get('request', {}).get('headers', {})
+            
+            params['path'] = '/'
+            if 'Host' in headers and headers['Host']:
+                params['host'] = headers['Host'][0]
+            params['headerType'] = 'http'
+            params['security'] = 'none'
+            
+    def handle_reality_security(self, stream_settings, params):
+        """Process 'reality' security settings"""
+        reality_settings = stream_settings.get('realitySettings', {})
+        settings = reality_settings.get('settings', {})
         
-        service_content = """[Unit]
-Description=V2Ray Config Server
-After=network.target
-
-[Service]
-ExecStart=/usr/bin/python3 /usr/local/bin/v2ray_config_server.py
-Restart=always
-User=root
-Group=root
-Environment=PATH=/usr/bin:/usr/local/bin
-WorkingDirectory=/tmp
-
-[Install]
-WantedBy=multi-user.target
-"""
-
-        try:
-            # نوشتن فایل سرویس
-            with open(service_path, 'w') as f:
-                f.write(service_content)
-            
-            # کپی خود این اسکریپت به مسیر اجرایی سیستمی
-            current_script = os.path.abspath(__file__)
-            target_path = '/usr/local/bin/v2ray_config_server.py'
-            
-            with open(current_script, 'r') as src, open(target_path, 'w') as dst:
-                dst.write(src.read())
-            
-            # تنظیم دسترسی‌ها
-            os.chmod(target_path, 0o755)
-            
-            # فعال‌سازی و شروع سرویس
-            subprocess.run(['systemctl', 'daemon-reload'], check=True)
-            subprocess.run(['systemctl', 'enable', 'v2ray_config_server'], check=True)
-            subprocess.run(['systemctl', 'start', 'v2ray_config_server'], check=True)
-            
-            logger.info("سرویس سیستمی با موفقیت نصب و راه‌اندازی شد")
-            
-        except Exception as e:
-            logger.error(f"خطا در تنظیم سرویس سیستمی: {e}")
-    
-    def run(self):
-        """اجرای سرور"""
-        # تنظیم سیگنال‌ها برای خروج تمیز
-        signal.signal(signal.SIGINT, self.signal_handler)
-        signal.signal(signal.SIGTERM, self.signal_handler)
+        params['security'] = 'reality'
+        params['pbk'] = settings.get('publicKey', '')
+        params['fp'] = settings.get('fingerprint', '')
         
-        self.server.start()
-    
-    def signal_handler(self, sig, frame):
-        """مدیریت سیگنال‌های خروج"""
-        logger.info(f"سیگنال {sig} دریافت شد. در حال خروج...")
-        self.server.stop()
-        sys.exit(0)
+        server_names = reality_settings.get('serverNames', [])
+        if server_names:
+            params['sni'] = server_names[0]
+            
+        short_ids = reality_settings.get('shortIds', [])
+        if short_ids:
+            params['sid'] = short_ids[0]
+            
+        params['spx'] = settings.get('spiderX', '')
+        
+    def generate_remark(self, remark, email):
+        """Generate remark for config"""
+        return f"{remark}-{email}"
 
-# نقطه ورودی اصلی برنامه
-if __name__ == "__main__":
-    # بررسی حقوق دسترسی (باید با دسترسی root اجرا شود)
-    if os.geteuid() != 0:
-        print("این برنامه نیاز به دسترسی root دارد. لطفاً با sudo اجرا کنید.")
-        sys.exit(1)
-    
-    # بررسی آرگومان‌های خط فرمان
-    if len(sys.argv) > 1:
-        if sys.argv[1] == "install":
-            # نصب به عنوان سرویس سیستمی
-            service = ConfigServerService()
-            service.setup_service()
-            sys.exit(0)
-        elif sys.argv[1] == "uninstall":
-            # حذف سرویس سیستمی
-            try:
-                subprocess.run(['systemctl', 'stop', 'v2ray_config_server'], check=False)
-                subprocess.run(['systemctl', 'disable', 'v2ray_config_server'], check=False)
-                os.remove('/etc/systemd/system/v2ray_config_server.service')
-                subprocess.run(['systemctl', 'daemon-reload'], check=False)
-                print("سرویس با موفقیت حذف شد.")
-            except Exception as e:
-                print(f"خطا در حذف سرویس: {e}")
-            sys.exit(0)
-    
-    # اجرای عادی برنامه
-    service = ConfigServerService()
-    service.run()
-EOF
-    
-    # جایگزینی WHITELIST_PLACEHOLDER با لیست واقعی
-    sed -i "s/WHITELIST_PLACEHOLDER/$WHITELIST/g" v2ray_config_server.py
-    
-    # تنظیم دسترسی‌ها
-    chmod +x v2ray_config_server.py
-    
-    echo -e "${GREEN}[موفقیت] اسکریپت پایتون با موفقیت ایجاد شد${NC}"
-}
+# Function to get local IP
+def get_local_ip():
+    try:
+        # Create a socket connection to determine the local IP address
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))  # Connect to Google DNS
+        local_ip = s.getsockname()[0]
+        s.close()
+        return local_ip
+    except:
+        return "127.0.0.1"  # Fallback to localhost if can't determine
 
-# نصب و راه‌اندازی سرویس
-install_service() {
-    echo -e "${YELLOW}[اطلاعات] در حال نصب سرویس...${NC}"
-    
-    # کپی اسکریپت به مسیر سیستمی
-    cp v2ray_config_server.py /usr/local/bin/
-    chmod +x /usr/local/bin/v2ray_config_server.py
-    
-    # ایجاد فایل سرویس
-    cat > /etc/systemd/system/v2ray_config_server.service << EOF
+# Flask server
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "XUI Manager server is running. Use /configs to get configurations."
+
+@app.route('/configs')
+def get_configs():
+    try:
+        xui_manager = XuiManager()
+        # Set the server IP to local IP for the config URLs
+        xui_manager.server_ip = get_local_ip()
+        response_text = xui_manager.fetch_inbounds_list()
+        response_json = json.loads(response_text)
+        return jsonify(response_json)
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'Server error: {str(e)}'})
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=8008, debug=False)
+EOL
+
+echo -e "${GREEN}XUI Manager Python script created successfully!${NC}"
+
+# Create systemd service file
+echo -e "${YELLOW}Creating systemd service file...${NC}"
+cat > /etc/systemd/system/xui-manager.service << EOL
 [Unit]
-Description=V2Ray Config Server
+Description=XUI Manager Python Server
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/python3 /usr/local/bin/v2ray_config_server.py
-Restart=always
 User=root
-Group=root
-Environment=PATH=/usr/bin:/usr/local/bin
-WorkingDirectory=/tmp
+WorkingDirectory=${INSTALL_DIR}
+ExecStart=${PYTHON_CMD} ${INSTALL_DIR}/xui_manager.py
+Restart=always
 
 [Install]
 WantedBy=multi-user.target
-EOF
-    
-    # فعال‌سازی و شروع سرویس
-    systemctl daemon-reload
-    systemctl enable v2ray_config_server
-    systemctl start v2ray_config_server
-    
-    echo -e "${GREEN}[موفقیت] سرویس با موفقیت نصب و راه‌اندازی شد${NC}"
-}
+EOL
 
-# تنظیم فایروال
-setup_firewall() {
-    echo -e "${YELLOW}[اطلاعات] در حال تنظیم فایروال...${NC}"
-    
-    # باز کردن پورت 800 برای دسترسی به API
-    iptables -A INPUT -p tcp --dport 800 -j ACCEPT
-    
-    # ذخیره تنظیمات فایروال
-    if [ "$OS" == "ubuntu" ] || [ "$OS" == "debian" ]; then
-        apt install -y iptables-persistent
-        netfilter-persistent save
-    elif [ "$OS" == "centos" ] || [ "$OS" == "rhel" ]; then
-        service iptables save
-    fi
-    
-    echo -e "${GREEN}[موفقیت] فایروال با موفقیت تنظیم شد${NC}"
-}
+# Make the Python script executable
+chmod +x $INSTALL_DIR/xui_manager.py
 
-# نمایش اطلاعات نهایی
-show_info() {
-    # دریافت آی‌پی سرور
-    SERVER_IP=$(curl -s ifconfig.me)
-    
-    echo -e "${BLUE}===================================================================${NC}"
-    echo -e "${GREEN}نصب و راه‌اندازی سرور کانفیگ V2Ray با موفقیت انجام شد!${NC}"
-    echo -e "${BLUE}===================================================================${NC}"
-    echo -e "${YELLOW}اطلاعات سرور:${NC}"
-    echo -e "آی‌پی سرور: ${GREEN}$SERVER_IP${NC}"
-    echo -e "پورت سرور: ${GREEN}800${NC}"
-    echo -e "آدرس API: ${GREEN}http://$SERVER_IP:800/api/configs${NC}"
-    echo -e "${BLUE}===================================================================${NC}"
-    echo -e "${YELLOW}دستورات مدیریتی:${NC}"
-    echo -e "وضعیت سرویس: ${GREEN}systemctl status v2ray_config_server${NC}"
-    echo -e "راه‌اندازی مجدد: ${GREEN}systemctl restart v2ray_config_server${NC}"
-    echo -e "مشاهده لاگ‌ها: ${GREEN}journalctl -u v2ray_config_server${NC}"
-    echo -e "${BLUE}===================================================================${NC}"
-    echo -e "${PURPLE}آی‌پی‌های مجاز شده:${NC}"
-    echo -e "${GREEN}$WHITELIST${NC}"
-    echo -e "${BLUE}===================================================================${NC}"
-}
+# Create the README file
+echo -e "${YELLOW}Creating README file...${NC}"
+cat > $INSTALL_DIR/README.md << 'EOL'
+# XUI Manager Python
 
-# اجرای اصلی برنامه
-main() {
-    check_os
-    install_dependencies
-    setup_whitelist
-    create_python_script
-    install_service
-    setup_firewall
-    show_info
-}
+This service automatically fetches and converts configurations from a local 3x-ui panel.
 
-# اجرای برنامه
-main
+## Usage
+
+Once installed, you can access the configurations at:
+
+```
+http://your_server_ip:8008/configs
+```
+
+## Service Management
+
+### Check status
+```
+systemctl status xui-manager
+```
+
+### Restart service
+```
+systemctl restart xui-manager
+```
+
+### View logs
+```
+journalctl -u xui-manager -f
+```
+
+## Configuration
+
+The service is configured to connect to a local 3x-ui panel with:
+- Username: zahed
+- Password: zahed2341
+- Port: 80
+
+To modify these settings, edit the Python script at:
+```
+/opt/xui-manager/xui_manager.py
+```
+EOL
+
+# Enable and start the service
+echo -e "${YELLOW}Enabling and starting the service...${NC}"
+systemctl daemon-reload
+systemctl enable xui-manager.service
+systemctl start xui-manager.service
+
+# Check if the service is running
+if systemctl is-active --quiet xui-manager.service; then
+  echo -e "${GREEN}XUI Manager service is now running!${NC}"
+else
+  echo -e "${RED}Failed to start XUI Manager service. Please check logs with: journalctl -u xui-manager -e${NC}"
+  exit 1
+fi
+
+# Get the server IP
+SERVER_IP=$(get_local_ip)
+
+echo -e "${BLUE}====================================================${NC}"
+echo -e "${GREEN}XUI Manager has been successfully installed!${NC}"
+echo -e "${GREEN}You can access it at: http://${SERVER_IP}:8008/configs${NC}"
+echo -e "${YELLOW}Service installed at: ${INSTALL_DIR}${NC}"
+echo -e "${YELLOW}Service logs can be viewed with: journalctl -u xui-manager -f${NC}"
+echo -e "${BLUE}====================================================${NC}"
+
+exit 0
