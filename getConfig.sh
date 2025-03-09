@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# XUI Manager Automated Setup Script
-# This script installs all required dependencies and sets up the service
+# XUI Manager Complete Setup Script
+# This script installs dependencies, creates the Python service, and sets up systemd service
 
 # Text colors
 GREEN='\033[0;32m'
@@ -9,6 +9,11 @@ YELLOW='\033[1;33m'
 RED='\033[0;31m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
+
+# Function to get local IP
+get_local_ip() {
+    hostname -I | awk '{print $1}'
+}
 
 echo -e "${BLUE}====================================================${NC}"
 echo -e "${BLUE}       3x-ui XUI Manager Automatic Setup           ${NC}"
@@ -27,7 +32,7 @@ mkdir -p $INSTALL_DIR
 
 # Check Python version
 echo -e "${YELLOW}Checking Python version...${NC}"
-    if command -v python3 &>/dev/null; then
+if command -v python3 &>/dev/null; then
   PYTHON_CMD="python3"
 else
   if command -v python &>/dev/null; then
@@ -40,14 +45,14 @@ else
   fi
 fi
 
+echo -e "${GREEN}Using Python command: $PYTHON_CMD${NC}"
+
 # Install pip if not available
 if ! $PYTHON_CMD -m pip --version &>/dev/null; then
   echo -e "${YELLOW}pip not found. Installing pip...${NC}"
   apt update
   apt install -y python3-pip
 fi
-
-echo -e "${GREEN}Using Python command: $PYTHON_CMD${NC}"
 
 # Install required packages
 echo -e "${YELLOW}Installing required packages...${NC}"
@@ -61,6 +66,7 @@ import json
 import urllib.parse
 import re
 import socket
+import subprocess
 from flask import Flask, jsonify
 
 class XuiManager:
@@ -70,7 +76,7 @@ class XuiManager:
         self.password = "zahed2341"
         self.port = 80
         self.ssl = False
-        self.server_ip = "127.0.0.1"  # Always use localhost
+        self.server_ip = "127.0.0.1"  # Initially set to localhost, will be updated later
         self.cookie = self.login_and_get_cookie()
         
     def login_and_get_cookie(self):
@@ -226,7 +232,6 @@ def get_local_ip():
     except:
         try:
             # Second attempt: try to get IP from hostname
-            import subprocess
             result = subprocess.run(['hostname', '-I'], stdout=subprocess.PIPE)
             ip = result.stdout.decode('utf-8').strip().split()[0]
             if ip:
@@ -342,10 +347,6 @@ else
 fi
 
 # Get the server IP
-# Define the get_local_ip function in this scope too so it can be called directly
-get_local_ip() {
-    hostname -I | awk '{print $1}'
-}
 SERVER_IP=$(get_local_ip)
 
 echo -e "${BLUE}====================================================${NC}"
