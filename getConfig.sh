@@ -27,7 +27,7 @@ mkdir -p $INSTALL_DIR
 
 # Check Python version
 echo -e "${YELLOW}Checking Python version...${NC}"
-if command -v python3 &>/dev/null; then
+    if command -v python3 &>/dev/null; then
   PYTHON_CMD="python3"
 else
   if command -v python &>/dev/null; then
@@ -38,6 +38,13 @@ else
     apt install -y python3 python3-pip
     PYTHON_CMD="python3"
   fi
+fi
+
+# Install pip if not available
+if ! $PYTHON_CMD -m pip --version &>/dev/null; then
+  echo -e "${YELLOW}pip not found. Installing pip...${NC}"
+  apt update
+  apt install -y python3-pip
 fi
 
 echo -e "${GREEN}Using Python command: $PYTHON_CMD${NC}"
@@ -210,14 +217,25 @@ class XuiManager:
 # Function to get local IP
 def get_local_ip():
     try:
-        # Create a socket connection to determine the local IP address
+        # First attempt: try to get IP via socket connection
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("8.8.8.8", 80))  # Connect to Google DNS
         local_ip = s.getsockname()[0]
         s.close()
         return local_ip
     except:
-        return "127.0.0.1"  # Fallback to localhost if can't determine
+        try:
+            # Second attempt: try to get IP from hostname
+            import subprocess
+            result = subprocess.run(['hostname', '-I'], stdout=subprocess.PIPE)
+            ip = result.stdout.decode('utf-8').strip().split()[0]
+            if ip:
+                return ip
+        except:
+            pass
+        
+        # Fallback to localhost if all methods fail
+        return "127.0.0.1"
 
 # Flask server
 app = Flask(__name__)
@@ -324,6 +342,10 @@ else
 fi
 
 # Get the server IP
+# Define the get_local_ip function in this scope too so it can be called directly
+get_local_ip() {
+    hostname -I | awk '{print $1}'
+}
 SERVER_IP=$(get_local_ip)
 
 echo -e "${BLUE}====================================================${NC}"
