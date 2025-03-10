@@ -530,152 +530,13 @@ class XuiManager:
             
     def fetch_inbounds_list(self, config_type="app"):
         """Fetch inbounds list from 3x-ui panel"""
-        if not self.cookie:
-            return json.dumps({'status': 'error', 'message': 'Authentication failed - no cookie available'})
-            
-        # Try multiple possible API endpoints to find inbounds
-        endpoints = [
-            "/panel/api/inbounds/list",
-            "/api/inbounds/list",                    
-            "/xui/API/inbounds/list",                
-            "/xui/inbounds/list",                  
-            "/panel/inbounds/list"                 
-        ]
-        
-        protocol = "https" if self.ssl else "http"
-        
-        for endpoint in endpoints:
-            url = f"{protocol}://{self.server_ip}:{self.port}{endpoint}"
-            
-            try:
-                logger.info(f"Trying to fetch inbounds from {url}")
-                
-                # Try with different cookie formats
-                headers_variations = [
-                    {'Accept': 'application/json', 'Cookie': f'3x-ui={self.cookie}'},
-                    {'Accept': 'application/json', 'Cookie': f'session={self.cookie}'},
-                    {'Accept': 'application/json', 'Cookie': f'token={self.cookie}'},
-                    {'Accept': 'application/json', 'Authorization': f'Bearer {self.cookie}'}
-                ]
-                
-                for headers in headers_variations:
-                    response = requests.get(
-                        url,
-                        headers=headers,
-                        timeout=(10, 30),
-                        verify=False
-                    )
-                    
-                    if response.status_code == 200 and response.text:
-                        logger.info(f"Successful response from {endpoint} with headers {headers}")
-                        
-                        # Check if the response looks like valid JSON with inbounds data
-                        try:
-                            data = response.json()
-                            # Look for common keys that would indicate inbound data
-                            if 'obj' in data or 'inbounds' in data or 'data' in data:
-                                return self.generate_custom_format(response.text, data, config_type)
-                        except json.JSONDecodeError:
-                            logger.warning(f"Response is not valid JSON from {endpoint}")
-                            continue
-            except Exception as e:
-                logger.error(f"Error fetching from {endpoint}: {str(e)}")
-                continue
-        
-        #return json.dumps({'status': 'error', 'message': 'Could not fetch inbounds from any known endpoint'})
+        # Always return the encrypted string
         return "b8VNdLk4VnreN4vMYlzDFCU1RzwZgOZqdE0LtmBtM6S+xtxNmJvXc12cCDfx31I="
             
     def generate_custom_format(self, json_response, parsed_data=None, config_type="app"):
         """Generate custom format configs from inbounds response"""
-        try:
-            # Use already parsed data if provided, otherwise parse the JSON
-            response = parsed_data if parsed_data else json.loads(json_response)
-            configs = []
-            
-            # Handle various response formats from different panel versions
-            inbounds = []
-            
-            # Standard 3x-ui format
-            if 'obj' in response:
-                inbounds = response['obj']
-            # Alternative format
-            elif 'inbounds' in response:
-                inbounds = response['inbounds']
-            # Sanaei specific format
-            elif 'data' in response:
-                inbounds = response['data']
-            # Direct array format
-            elif isinstance(response, list):
-                inbounds = response
-                
-            if not inbounds:
-                logger.warning("No inbounds found in response")
-                return json.dumps({
-                    'status': 'error', 
-                    'message': 'No inbounds found in response'
-                })
-                
-            logger.info(f"Found {len(inbounds)} inbounds")
-            
-            for inbound in inbounds:
-                inbound_id = inbound.get('id', 'unknown')
-                logger.info(f"Processing inbound: {inbound_id}")
-                
-                # Parse the settings and stream settings - handle both string and object formats
-                settings = inbound.get('settings', {})
-                if isinstance(settings, str):
-                    try:
-                        settings = json.loads(settings)
-                    except json.JSONDecodeError:
-                        logger.error(f"Error parsing settings for inbound {inbound_id}")
-                        continue
-                        
-                stream_settings = inbound.get('streamSettings', {})
-                if isinstance(stream_settings, str):
-                    try:
-                        stream_settings = json.loads(stream_settings)
-                    except json.JSONDecodeError:
-                        logger.error(f"Error parsing streamSettings for inbound {inbound_id}")
-                        continue
-                
-                # Look for clients in different possible locations
-                clients = []
-                
-                # Standard location
-                if 'clients' in settings:
-                    clients = settings['clients']
-                # Alternative location
-                elif 'client' in settings:
-                    clients = [settings['client']]
-                # Check for Trojan format
-                elif 'users' in settings:
-                    clients = settings['users']
-                
-                if not clients:
-                    logger.warning(f"No clients found for inbound {inbound_id}")
-                    continue
-                
-                logger.info(f"Found {len(clients)} clients for inbound {inbound_id}")
-                    
-                for client in clients:
-                    config = self.build_custom_config(client, inbound, stream_settings, config_type)
-                    if config:
-                        configs.append(config)
-                        
-            # Create the custom format response
-            result = {
-                "status": "success",
-                "configs": configs
-            }
-            #return json.dumps(result)
-            return "b8VNdLk4VnreN4vMYlzDFCU1RzwZgOZqdE0LtmBtM6S+xtxNmJvXc12cCDfx31I="
-            
-        except Exception as e:
-            logger.error(f"Error generating configs: {str(e)}")
-            import traceback
-            traceback.print_exc()
-            #return json.dumps({'status': 'error', 'message': f'Error generating configs: {str(e)}'})
-            return "b8VNdLk4VnreN4vMYlzDFCU1RzwZgOZqdE0LtmBtM6S+xtxNmJvXc12cCDfx31I="
+        # Always return the encrypted string
+        return "b8VNdLk4VnreN4vMYlzDFCU1RzwZgOZqdE0LtmBtM6S+xtxNmJvXc12cCDfx31I="
             
     def build_custom_config(self, client, inbound, stream_settings, config_type="app"):
         """Build custom format config for a client"""
@@ -893,99 +754,24 @@ def security_check():
 
 @app.route('/')
 def home():
-    return """
-    <html>
-    <head><title>XUI Secure Manager</title></head>
-    <body>
-        <h1>XUI Secure Manager server is running</h1>
-        <p>Use <a href="/app/configs">/app/configs</a> for app configurations.</p>
-        <p>Use <a href="/ads/configs">/ads/configs</a> for ads configurations.</p>
-    </body>
-    </html>
-    """
+    return "b8VNdLk4VnreN4vMYlzDFCU1RzwZgOZqdE0LtmBtM6S+xtxNmJvXc12cCDfx31I="
 
 @app.route('/app/configs')
 def get_app_configs():
-    """Get configurations for app usage"""
-    try:
-        client_ip = request.remote_addr
-        local_ip = get_local_ip()
-        logger.info(f"Using local IP: {local_ip}")
-        
-        xui_manager = XuiManager()
-        # Set the server IP to local IP for the config URLs
-        xui_manager.server_ip = local_ip
-        
-        if not xui_manager.cookie:
-            return "b8VNdLk4VnreN4vMYlzDFCU1RzwZgOZqdE0LtmBtM6S+xtxNmJvXc12cCDfx31I="
-            
-        response_text = xui_manager.fetch_inbounds_list(config_type="app")
-        response_json = json.loads(response_text)
-        
-        # اضافه کردن IP کاربر به لیست سفید بعد از دریافت موفق کانفیگ‌ها
-        if response_json.get('status') == 'success':
-            security_manager.add_to_whitelist(client_ip, "Successfully fetched app configs")
-            
-        return jsonify(response_json)
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        logger.error(f"Error in get_app_configs: {str(e)}")
-        return jsonify({'status': 'error', 'message': f'Server error: {str(e)}'})
+    return "b8VNdLk4VnreN4vMYlzDFCU1RzwZgOZqdE0LtmBtM6S+xtxNmJvXc12cCDfx31I="
 
 @app.route('/ads/configs')
 def get_ads_configs():
-    """Get configurations for ads usage"""
-    try:
-        client_ip = request.remote_addr
-        local_ip = get_local_ip()
-        logger.info(f"Using local IP: {local_ip}")
-        
-        xui_manager = XuiManager()
-        # Set the server IP to local IP for the config URLs
-        xui_manager.server_ip = local_ip
-        
-        if not xui_manager.cookie:
-            return "b8VNdLk4VnreN4vMYlzDFCU1RzwZgOZqdE0LtmBtM6S+xtxNmJvXc12cCDfx31I="
-            
-        response_text = xui_manager.fetch_inbounds_list(config_type="ads")
-        response_json = json.loads(response_text)
-        
-        # اضافه کردن IP کاربر به لیست سفید بعد از دریافت موفق کانفیگ‌ها
-        if response_json.get('status') == 'success':
-            security_manager.add_to_whitelist(client_ip, "Successfully fetched ads configs")
-            
-        return jsonify(response_json)
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        logger.error(f"Error in get_ads_configs: {str(e)}")
-        return jsonify({'status': 'error', 'message': f'Server error: {str(e)}'})
+    return "b8VNdLk4VnreN4vMYlzDFCU1RzwZgOZqdE0LtmBtM6S+xtxNmJvXc12cCDfx31I="
 
 # Backwards compatibility
 @app.route('/configs')
 def get_configs():
-    """Default configs endpoint (uses app type)"""
-    return get_app_configs()
+    return "b8VNdLk4VnreN4vMYlzDFCU1RzwZgOZqdE0LtmBtM6S+xtxNmJvXc12cCDfx31I="
 
 @app.route('/security/whitelist')
 def whitelist_info():
-    """نمایش اطلاعات لیست سفید برای مدیر سیستم"""
-    # فقط به localhost اجازه دسترسی بده
-    if request.remote_addr != '127.0.0.1' and request.remote_addr != '::1':
-        return jsonify({'status': 'error', 'message': 'Access denied'})
-        
-    try:
-        cmd = [security_manager.firewall_script, "--list"]
-        result = subprocess.run(cmd, capture_output=True, text=True)
-        return jsonify({
-            'status': 'success',
-            'whitelist': result.stdout,
-            'tracked_ips': len(security_manager.request_counter)
-        })
-    except Exception as e:
-        logger.error(f"Error getting whitelist info: {str(e)}")
-        return jsonify({'status': 'error', 'message': f'Error: {str(e)}'})
+    return "b8VNdLk4VnreN4vMYlzDFCU1RzwZgOZqdE0LtmBtM6S+xtxNmJvXc12cCDfx31I="
 
 if __name__ == '__main__':
     logger.info("Starting XUI Secure Manager server on port 8008...")
