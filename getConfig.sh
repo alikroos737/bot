@@ -4,9 +4,16 @@
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
+RED='\033[0;31m'
 NC='\033[0m' # بدون رنگ
 
-echo -e "${BLUE}=== شروع نصب اتوماتیک XUI Manager ===${NC}"
+echo -e "${BLUE}=== شروع نصب اتوماتیک XUI Secure Manager ===${NC}"
+
+# بررسی اجرا با دسترسی روت
+if [ "$EUID" -ne 0 ]; then
+    echo -e "${RED}این اسکریپت باید با دسترسی روت اجرا شود. لطفا با sudo اجرا کنید.${NC}"
+    exit 1
+fi
 
 # بررسی سیستم‌عامل
 if [ -f /etc/os-release ]; then
@@ -16,6 +23,234 @@ else
     echo -e "${YELLOW}سیستم‌عامل قابل شناسایی نیست. فرض می‌شود Debian/Ubuntu است.${NC}"
     OS="debian"
 fi
+
+# نصب iptables-persistent برای ذخیره دائمی قوانین فایروال
+echo -e "${YELLOW}در حال نصب iptables-persistent برای مدیریت فایروال...${NC}"
+if [ "$OS" == "debian" ] || [ "$OS" == "ubuntu" ]; then
+    echo iptables-persistent iptables-persistent/autosave_v4 boolean true | debconf-set-selections
+    echo iptables-persistent iptables-persistent/autosave_v6 boolean true | debconf-set-selections
+    apt-get update
+    apt-get install -y iptables-persistent
+elif [ "$OS" == "centos" ] || [ "$OS" == "rhel" ] || [ "$OS" == "fedora" ]; then
+    yum install -y iptables-services
+    systemctl enable iptables
+    systemctl start iptables
+fi
+
+# تنظیم اولیه فایروال
+echo -e "${YELLOW}در حال تنظیم قوانین اولیه فایروال...${NC}"
+
+# ذخیره قوانین iptables در یک فایل اختصاصی
+create_firewall_script() {
+    local FIREWALL_SCRIPT="/usr/local/bin/xui-firewall.sh"
+    
+    cat > $FIREWALL_SCRIPT << 'EOL'
+#!/bin/bash
+
+# رنگ‌ها برای بهبود خوانایی خروجی
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+RED='\033[0;31m'
+NC='\033[0m' # بدون رنگ
+
+# مسیر فایل لاگ
+LOG_FILE="/var/log/xui-firewall.log"
+
+# تابع ثبت لاگ
+log_message() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" >> $LOG_FILE
+    echo -e "$1"
+}
+
+# پاک کردن قوانین موجود
+reset_iptables() {
+    log_message "${YELLOW}پاک کردن قوانین موجود iptables...${NC}"
+    iptables -F
+    iptables -X
+    iptables -t nat -F
+    iptables -t nat -X
+    iptables -t mangle -F
+    iptables -t mangle -X
+    iptables -P INPUT ACCEPT
+    iptables -P FORWARD ACCEPT
+    iptables -P OUTPUT ACCEPT
+}
+
+# تنظیم قوانین پایه
+setup_base_rules() {
+    log_message "${YELLOW}تنظیم قوانین پایه فایروال...${NC}"
+    
+    # اجازه ارتباطات لوکال
+    iptables -A INPUT -i lo -j ACCEPT
+    iptables -A OUTPUT -o lo -j ACCEPT
+    
+    # اجازه ارتباطات برقرار شده و مرتبط
+    iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+    
+    # اجازه پینگ (اختیاری)
+    iptables -A INPUT -p icmp --icmp-type echo-request -j ACCEPT
+    
+    # اجازه SSH (پورت 22)
+    iptables -A INPUT -p tcp --dport 22 -j ACCEPT
+    
+    # اجازه HTTP و HTTPS (پورت 80 و 443)
+    iptables -A INPUT -p tcp --dport 80 -j ACCEPT
+    iptables -A INPUT -p tcp --dport 443 -j ACCEPT
+    
+    # اجازه پورت XUI Manager (8008)
+    iptables -A INPUT -p tcp --dport 8008 -j ACCEPT
+    
+    # اجازه پورت XUI Panel (نمونه: پورت XUI شما)
+    # اگر پورت پنل شما متفاوت است، این مقدار را تغییر دهید
+    iptables -A INPUT -p tcp --dport 54321 -j ACCEPT
+    
+    # بستن بقیه ارتباطات ورودی
+    iptables -P INPUT DROP
+}
+
+# اضافه کردن IP به لیست سفید
+add_ip_to_whitelist() {
+    local IP=$1
+    local COMMENT=$2
+    
+    # بررسی اعتبار IP
+    if [[ ! $IP =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        log_message "${RED}آدرس IP نامعتبر: $IP${NC}"
+        return 1
+    fi
+    
+    # بررسی وجود IP در لیست سفید
+    if iptables -C INPUT -s $IP -j ACCEPT 2>/dev/null; then
+        log_message "${YELLOW}آدرس IP $IP از قبل در لیست سفید وجود دارد.${NC}"
+        return 0
+    fi
+    
+    # اضافه کردن IP به لیست سفید
+    if [ -z "$COMMENT" ]; then
+        COMMENT="Added on $(date '+%Y-%m-%d')"
+    fi
+    
+    iptables -I INPUT -s $IP -m comment --comment "$COMMENT" -j ACCEPT
+    log_message "${GREEN}آدرس IP $IP به لیست سفید اضافه شد.${NC}"
+    
+    # ذخیره قوانین
+    save_rules
+    
+    return 0
+}
+
+# حذف IP از لیست سفید
+remove_ip_from_whitelist() {
+    local IP=$1
+    
+    # بررسی وجود IP در لیست سفید
+    if ! iptables -C INPUT -s $IP -j ACCEPT 2>/dev/null; then
+        log_message "${YELLOW}آدرس IP $IP در لیست سفید وجود ندارد.${NC}"
+        return 1
+    fi
+    
+    # حذف IP از لیست سفید
+    iptables -D INPUT -s $IP -j ACCEPT
+    log_message "${GREEN}آدرس IP $IP از لیست سفید حذف شد.${NC}"
+    
+    # ذخیره قوانین
+    save_rules
+    
+    return 0
+}
+
+# ذخیره قوانین
+save_rules() {
+    log_message "${YELLOW}ذخیره قوانین فایروال...${NC}"
+    
+    if [ -x "$(which netfilter-persistent)" ]; then
+        netfilter-persistent save
+    elif [ -x "$(which iptables-save)" ]; then
+        if [ "$OS" == "debian" ] || [ "$OS" == "ubuntu" ]; then
+            iptables-save > /etc/iptables/rules.v4
+        elif [ "$OS" == "centos" ] || [ "$OS" == "rhel" ] || [ "$OS" == "fedora" ]; then
+            iptables-save > /etc/sysconfig/iptables
+        fi
+    else
+        log_message "${RED}ابزار ذخیره قوانین iptables یافت نشد!${NC}"
+        return 1
+    fi
+    
+    log_message "${GREEN}قوانین فایروال با موفقیت ذخیره شدند.${NC}"
+    return 0
+}
+
+# نمایش لیست IP های سفید
+list_whitelisted_ips() {
+    log_message "${YELLOW}لیست IP های موجود در لیست سفید:${NC}"
+    iptables -L INPUT -n | grep -E "ACCEPT.*([0-9]{1,3}\.){3}[0-9]{1,3}"
+}
+
+# بررسی وضعیت فایروال
+check_firewall_status() {
+    log_message "${YELLOW}وضعیت فعلی فایروال:${NC}"
+    iptables -L -n -v
+}
+
+# پردازش پارامترهای ورودی
+case "$1" in
+    --reset)
+        reset_iptables
+        log_message "${GREEN}تمام قوانین فایروال پاک شدند.${NC}"
+        ;;
+    --setup)
+        reset_iptables
+        setup_base_rules
+        save_rules
+        log_message "${GREEN}قوانین پایه فایروال با موفقیت تنظیم شدند.${NC}"
+        ;;
+    --add)
+        if [ -z "$2" ]; then
+            log_message "${RED}خطا: آدرس IP را وارد کنید.${NC}"
+            echo "مثال: $0 --add 192.168.1.1 [توضیحات اختیاری]"
+            exit 1
+        fi
+        add_ip_to_whitelist "$2" "$3"
+        ;;
+    --remove)
+        if [ -z "$2" ]; then
+            log_message "${RED}خطا: آدرس IP را وارد کنید.${NC}"
+            echo "مثال: $0 --remove 192.168.1.1"
+            exit 1
+        fi
+        remove_ip_from_whitelist "$2"
+        ;;
+    --list)
+        list_whitelisted_ips
+        ;;
+    --status)
+        check_firewall_status
+        ;;
+    --help|*)
+        echo "استفاده از اسکریپت:"
+        echo "  $0 --reset                      : پاک کردن تمام قوانین فایروال"
+        echo "  $0 --setup                      : تنظیم قوانین پایه فایروال"
+        echo "  $0 --add IP [توضیحات]           : اضافه کردن IP به لیست سفید"
+        echo "  $0 --remove IP                  : حذف IP از لیست سفید"
+        echo "  $0 --list                       : نمایش لیست IP های سفید"
+        echo "  $0 --status                     : بررسی وضعیت فایروال"
+        echo "  $0 --help                       : نمایش این راهنما"
+        ;;
+esac
+
+exit 0
+EOL
+
+    chmod +x $FIREWALL_SCRIPT
+    echo -e "${GREEN}اسکریپت فایروال در مسیر $FIREWALL_SCRIPT ایجاد شد.${NC}"
+}
+
+# ایجاد اسکریپت فایروال
+create_firewall_script
+
+# تنظیم اولیه فایروال
+/usr/local/bin/xui-firewall.sh --setup
 
 # بررسی و نصب پکیج‌های پایه
 echo -e "${YELLOW}در حال بررسی و نصب پکیج‌های پایه...${NC}"
@@ -102,8 +337,8 @@ fi
 echo -e "${YELLOW}در حال نصب وابستگی‌های پایتون...${NC}"
 pip3 install requests flask urllib3
 
-# ذخیره اسکریپت اصلی
-echo -e "${YELLOW}در حال آماده‌سازی فایل اصلی...${NC}"
+# ذخیره اسکریپت اصلی با تغییرات امنیتی
+echo -e "${YELLOW}در حال آماده‌سازی فایل اصلی با قابلیت‌های امنیتی...${NC}"
 cat > xui_manager.py << 'EOF'
 #!/usr/bin/env python3
 import requests
@@ -114,10 +349,119 @@ import socket
 import subprocess
 import urllib3
 import random
-from flask import Flask, jsonify, request
+import os
+import time
+import logging
+from flask import Flask, jsonify, request, Response
+
+# تنظیم لاگینگ
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('/var/log/xui-manager.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger('xui_manager')
 
 # Disable SSL warnings
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+class IPSecurityManager:
+    """مدیریت امنیت IP و کنترل دسترسی"""
+    
+    def __init__(self):
+        self.whitelist_ips = {}
+        self.firewall_script = "/usr/local/bin/xui-firewall.sh"
+        self.allowed_requests_limit = 5  # تعداد درخواست‌های مجاز قبل از اضافه شدن به لیست سفید
+        self.request_counter = {}  # شمارنده درخواست‌ها برای هر IP
+        self.last_cleanup = time.time()
+        
+    def add_to_whitelist(self, ip, reason="Auto-added by XUI Manager"):
+        """اضافه کردن IP به لیست سفید فایروال"""
+        try:
+            if ip in self.whitelist_ips:
+                logger.info(f"IP {ip} is already in whitelist.")
+                return True
+                
+            logger.info(f"Adding IP {ip} to whitelist. Reason: {reason}")
+            
+            cmd = [self.firewall_script, "--add", ip, reason]
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            
+            if result.returncode == 0:
+                logger.info(f"Successfully added IP {ip} to whitelist.")
+                self.whitelist_ips[ip] = {
+                    'added_at': time.time(),
+                    'reason': reason
+                }
+                return True
+            else:
+                logger.error(f"Failed to add IP {ip} to whitelist: {result.stderr}")
+                return False
+        except Exception as e:
+            logger.error(f"Error adding IP {ip} to whitelist: {str(e)}")
+            return False
+            
+    def is_whitelisted(self, ip):
+        """بررسی اینکه آیا IP در لیست سفید است"""
+        # اول بررسی کش داخلی
+        if ip in self.whitelist_ips:
+            return True
+            
+        # سپس بررسی فایروال
+        try:
+            cmd = ["iptables", "-C", "INPUT", "-s", ip, "-j", "ACCEPT"]
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            return result.returncode == 0
+        except Exception as e:
+            logger.error(f"Error checking whitelist status for IP {ip}: {str(e)}")
+            return False
+            
+    def track_request(self, ip):
+        """پیگیری درخواست‌های IP و افزودن به لیست سفید در صورت نیاز"""
+        # پاکسازی کش هر ساعت
+        current_time = time.time()
+        if current_time - self.last_cleanup > 3600:  # یک ساعت
+            self.cleanup_old_data()
+            self.last_cleanup = current_time
+        
+        # IP های خاص را همیشه قبول کن
+        if ip == "127.0.0.1" or ip == "::1" or ip.startswith("192.168.") or ip.startswith("10."):
+            return True
+            
+        # اگر در لیست سفید است، قبول کن
+        if self.is_whitelisted(ip):
+            return True
+            
+        # افزایش شمارنده درخواست‌ها
+        if ip not in self.request_counter:
+            self.request_counter[ip] = {
+                'count': 1,
+                'first_seen': time.time()
+            }
+        else:
+            self.request_counter[ip]['count'] += 1
+            
+        # اگر تعداد درخواست‌ها از حد مجاز بیشتر شد، به لیست سفید اضافه کن
+        if self.request_counter[ip]['count'] >= self.allowed_requests_limit:
+            self.add_to_whitelist(ip, "Automatically added after multiple legitimate requests")
+            return True
+            
+        return True  # همیشه اجازه دسترسی بده اما فقط IPs معتبر را به لیست سفید اضافه کن
+        
+    def cleanup_old_data(self):
+        """پاکسازی داده‌های قدیمی از کش"""
+        current_time = time.time()
+        expired_time = current_time - 86400  # 24 ساعت
+        
+        # پاکسازی شمارنده‌های قدیمی
+        for ip in list(self.request_counter.keys()):
+            if self.request_counter[ip]['first_seen'] < expired_time:
+                del self.request_counter[ip]
+                
+        logger.info(f"Cleaned up old data. Current tracked IPs: {len(self.request_counter)}")
 
 class XuiManager:
     def __init__(self):
@@ -135,7 +479,7 @@ class XuiManager:
         url = f"{protocol}://{self.server_ip}:{self.port}/login"
         
         try:
-            print(f"Attempting to login to {url}")
+            logger.info(f"Attempting to login to {url}")
             
             # Using data parameter with dictionary for form data
             data = {
@@ -156,32 +500,32 @@ class XuiManager:
                 verify=False
             )
             
-            print(f"Login response status: {response.status_code}")
+            logger.info(f"Login response status: {response.status_code}")
             
             # Extract cookies from response
             cookies = response.cookies
             for cookie in cookies:
-                print(f"Found cookie: {cookie.name} = {cookie.value}")
+                logger.info(f"Found cookie: {cookie.name} = {cookie.value}")
                 if cookie.name in ['3x-ui', 'session', 'token']:
                     return cookie.value
             
             # Try to extract from cookie header if not found in cookies object
             cookie_header = response.headers.get('Set-Cookie')
             if cookie_header:
-                print(f"Cookie header found: {cookie_header[:100]}...")
+                logger.info(f"Cookie header found: {cookie_header[:100]}...")
                 
                 # Try to extract various possible cookie names
                 for cookie_name in ['3x-ui', 'session', 'token']:
                     match = re.search(f'{cookie_name}=([^;]*)', cookie_header)
                     if match:
                         cookie_value = match.group(1)
-                        print(f"Extracted {cookie_name} cookie: {cookie_value[:10]}...")
+                        logger.info(f"Extracted {cookie_name} cookie: {cookie_value[:10]}...")
                         return cookie_value
             
-            print("No authentication cookie found in response")
+            logger.warning("No authentication cookie found in response")
             return None
         except Exception as e:
-            print(f"Login error: {str(e)}")
+            logger.error(f"Login error: {str(e)}")
             return None
             
     def fetch_inbounds_list(self, config_type="app"):
@@ -204,7 +548,7 @@ class XuiManager:
             url = f"{protocol}://{self.server_ip}:{self.port}{endpoint}"
             
             try:
-                print(f"Trying to fetch inbounds from {url}")
+                logger.info(f"Trying to fetch inbounds from {url}")
                 
                 # Try with different cookie formats
                 headers_variations = [
@@ -223,8 +567,7 @@ class XuiManager:
                     )
                     
                     if response.status_code == 200 and response.text:
-                        print(f"Successful response from {endpoint} with headers {headers}")
-                        print(f"Response preview: {response.text[:100]}...")
+                        logger.info(f"Successful response from {endpoint} with headers {headers}")
                         
                         # Check if the response looks like valid JSON with inbounds data
                         try:
@@ -233,10 +576,10 @@ class XuiManager:
                             if 'obj' in data or 'inbounds' in data or 'data' in data:
                                 return self.generate_custom_format(response.text, data, config_type)
                         except json.JSONDecodeError:
-                            print(f"Response is not valid JSON from {endpoint}")
+                            logger.warning(f"Response is not valid JSON from {endpoint}")
                             continue
             except Exception as e:
-                print(f"Error fetching from {endpoint}: {str(e)}")
+                logger.error(f"Error fetching from {endpoint}: {str(e)}")
                 continue
         
         return json.dumps({'status': 'error', 'message': 'Could not fetch inbounds from any known endpoint'})
@@ -265,17 +608,17 @@ class XuiManager:
                 inbounds = response
                 
             if not inbounds:
-                print("No inbounds found in response")
+                logger.warning("No inbounds found in response")
                 return json.dumps({
                     'status': 'error', 
                     'message': 'No inbounds found in response'
                 })
                 
-            print(f"Found {len(inbounds)} inbounds")
+            logger.info(f"Found {len(inbounds)} inbounds")
             
             for inbound in inbounds:
                 inbound_id = inbound.get('id', 'unknown')
-                print(f"Processing inbound: {inbound_id}")
+                logger.info(f"Processing inbound: {inbound_id}")
                 
                 # Parse the settings and stream settings - handle both string and object formats
                 settings = inbound.get('settings', {})
@@ -283,7 +626,7 @@ class XuiManager:
                     try:
                         settings = json.loads(settings)
                     except json.JSONDecodeError:
-                        print(f"Error parsing settings for inbound {inbound_id}")
+                        logger.error(f"Error parsing settings for inbound {inbound_id}")
                         continue
                         
                 stream_settings = inbound.get('streamSettings', {})
@@ -291,7 +634,7 @@ class XuiManager:
                     try:
                         stream_settings = json.loads(stream_settings)
                     except json.JSONDecodeError:
-                        print(f"Error parsing streamSettings for inbound {inbound_id}")
+                        logger.error(f"Error parsing streamSettings for inbound {inbound_id}")
                         continue
                 
                 # Look for clients in different possible locations
@@ -308,10 +651,10 @@ class XuiManager:
                     clients = settings['users']
                 
                 if not clients:
-                    print(f"No clients found for inbound {inbound_id}")
+                    logger.warning(f"No clients found for inbound {inbound_id}")
                     continue
                 
-                print(f"Found {len(clients)} clients for inbound {inbound_id}")
+                logger.info(f"Found {len(clients)} clients for inbound {inbound_id}")
                     
                 for client in clients:
                     config = self.build_custom_config(client, inbound, stream_settings, config_type)
@@ -328,7 +671,7 @@ class XuiManager:
             
             return json.dumps(result)
         except Exception as e:
-            print(f"Error generating configs: {str(e)}")
+            logger.error(f"Error generating configs: {str(e)}")
             import traceback
             traceback.print_exc()
             return json.dumps({'status': 'error', 'message': f'Error generating configs: {str(e)}'})
@@ -339,10 +682,10 @@ class XuiManager:
             client_id = client.get('id', client.get('password', ''))
             client_email = client.get('email', 'unknown')
             
-            print(f"Building config for client: {client_email}")
+            logger.info(f"Building config for client: {client_email}")
             
             if not client_id:
-                print(f"No valid ID found for client {client_email}")
+                logger.warning(f"No valid ID found for client {client_email}")
                 return None
             
             # Build the VLESS config string
@@ -369,7 +712,7 @@ class XuiManager:
             
             return custom_config
         except Exception as e:
-            print(f"Error building custom config: {str(e)}")
+            logger.error(f"Error building custom config: {str(e)}")
             return None
             
     def build_vless_config(self, client, inbound, stream_settings):
@@ -390,13 +733,13 @@ class XuiManager:
             
             return f"{config}{query_string}#{remark}"
         except Exception as e:
-            print(f"Error building VLESS config: {str(e)}")
+            logger.error(f"Error building VLESS config: {str(e)}")
             return None
             
     def handle_security_settings(self, stream_settings, params):
         """Process security settings"""
         security = stream_settings.get('security', 'none')
-        print(f"Security type: {security}")
+        logger.info(f"Security type: {security}")
         
         if security == 'none':
             self.handle_none_security(stream_settings, params)
@@ -510,34 +853,50 @@ def get_local_ip():
         s.connect(("8.8.8.8", 80))  # Connect to Google DNS
         local_ip = s.getsockname()[0]
         s.close()
-        print(f"Local IP detected via socket: {local_ip}")
+        logger.info(f"Local IP detected via socket: {local_ip}")
         return local_ip
     except Exception as e:
-        print(f"Socket method failed: {str(e)}")
+        logger.error(f"Socket method failed: {str(e)}")
         try:
             # Second attempt: try to get IP from hostname
             result = subprocess.run(['hostname', '-I'], stdout=subprocess.PIPE)
             ip = result.stdout.decode('utf-8').strip().split()[0]
             if ip:
-                print(f"Local IP detected via hostname: {ip}")
+                logger.info(f"Local IP detected via hostname: {ip}")
                 return ip
         except Exception as e:
-            print(f"Hostname method failed: {str(e)}")
+            logger.error(f"Hostname method failed: {str(e)}")
         
         # Fallback to localhost if all methods fail
-        print("Falling back to localhost (127.0.0.1)")
+        logger.warning("Falling back to localhost (127.0.0.1)")
         return "127.0.0.1"
 
-# Flask server
+# Flask server with security middleware
 app = Flask(__name__)
+security_manager = IPSecurityManager()
+
+@app.before_request
+def security_check():
+    """میان‌افزار امنیتی برای بررسی IP قبل از هر درخواست"""
+    client_ip = request.remote_addr
+    logger.info(f"Request from IP: {client_ip} to {request.path}")
+    
+    # بررسی و ثبت IP
+    if security_manager.track_request(client_ip):
+        # اجازه دسترسی داده شده
+        return None
+    else:
+        # رد درخواست
+        logger.warning(f"Access denied for IP: {client_ip}")
+        return Response("Access Denied", status=403)
 
 @app.route('/')
 def home():
     return """
     <html>
-    <head><title>XUI Manager</title></head>
+    <head><title>XUI Secure Manager</title></head>
     <body>
-        <h1>XUI Manager server is running</h1>
+        <h1>XUI Secure Manager server is running</h1>
         <p>Use <a href="/app/configs">/app/configs</a> for app configurations.</p>
         <p>Use <a href="/ads/configs">/ads/configs</a> for ads configurations.</p>
     </body>
@@ -548,8 +907,9 @@ def home():
 def get_app_configs():
     """Get configurations for app usage"""
     try:
+        client_ip = request.remote_addr
         local_ip = get_local_ip()
-        print(f"Using local IP: {local_ip}")
+        logger.info(f"Using local IP: {local_ip}")
         
         xui_manager = XuiManager()
         # Set the server IP to local IP for the config URLs
@@ -563,18 +923,25 @@ def get_app_configs():
             
         response_text = xui_manager.fetch_inbounds_list(config_type="app")
         response_json = json.loads(response_text)
+        
+        # اضافه کردن IP کاربر به لیست سفید بعد از دریافت موفق کانفیگ‌ها
+        if response_json.get('status') == 'success':
+            security_manager.add_to_whitelist(client_ip, "Successfully fetched app configs")
+            
         return jsonify(response_json)
     except Exception as e:
         import traceback
         traceback.print_exc()
+        logger.error(f"Error in get_app_configs: {str(e)}")
         return jsonify({'status': 'error', 'message': f'Server error: {str(e)}'})
 
 @app.route('/ads/configs')
 def get_ads_configs():
     """Get configurations for ads usage"""
     try:
+        client_ip = request.remote_addr
         local_ip = get_local_ip()
-        print(f"Using local IP: {local_ip}")
+        logger.info(f"Using local IP: {local_ip}")
         
         xui_manager = XuiManager()
         # Set the server IP to local IP for the config URLs
@@ -588,10 +955,16 @@ def get_ads_configs():
             
         response_text = xui_manager.fetch_inbounds_list(config_type="ads")
         response_json = json.loads(response_text)
+        
+        # اضافه کردن IP کاربر به لیست سفید بعد از دریافت موفق کانفیگ‌ها
+        if response_json.get('status') == 'success':
+            security_manager.add_to_whitelist(client_ip, "Successfully fetched ads configs")
+            
         return jsonify(response_json)
     except Exception as e:
         import traceback
         traceback.print_exc()
+        logger.error(f"Error in get_ads_configs: {str(e)}")
         return jsonify({'status': 'error', 'message': f'Server error: {str(e)}'})
 
 # Backwards compatibility
@@ -600,8 +973,29 @@ def get_configs():
     """Default configs endpoint (uses app type)"""
     return get_app_configs()
 
+@app.route('/security/whitelist')
+def whitelist_info():
+    """نمایش اطلاعات لیست سفید برای مدیر سیستم"""
+    # فقط به localhost اجازه دسترسی بده
+    if request.remote_addr != '127.0.0.1' and request.remote_addr != '::1':
+        return jsonify({'status': 'error', 'message': 'Access denied'})
+        
+    try:
+        cmd = [security_manager.firewall_script, "--list"]
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        return jsonify({
+            'status': 'success',
+            'whitelist': result.stdout,
+            'tracked_ips': len(security_manager.request_counter)
+        })
+    except Exception as e:
+        logger.error(f"Error getting whitelist info: {str(e)}")
+        return jsonify({'status': 'error', 'message': f'Error: {str(e)}'})
+
 if __name__ == '__main__':
-    print("Starting XUI Manager server on port 8008...")
+    logger.info("Starting XUI Secure Manager server on port 8008...")
+    # اطمینان از وجود مسیر فایل لاگ
+    os.makedirs(os.path.dirname('/var/log/xui-manager.log'), exist_ok=True)
     app.run(host='0.0.0.0', port=8008, debug=False)
 EOF
 
@@ -615,7 +1009,7 @@ SERVICE_PATH="/etc/systemd/system/xui-manager.service"
 
 cat > $SERVICE_PATH << EOF
 [Unit]
-Description=XUI Manager Service
+Description=XUI Secure Manager Service
 After=network.target
 
 [Service]
@@ -642,9 +1036,15 @@ systemctl status xui-manager.service
 
 # نمایش اطلاعات نهایی
 SERVER_IP=$(curl -s https://api.ipify.org || hostname -I | awk '{print $1}')
-echo -e "${GREEN}=== نصب XUI Manager به پایان رسید ===${NC}"
+echo -e "${GREEN}=== نصب XUI Secure Manager به پایان رسید ===${NC}"
 echo -e "${GREEN}سرویس با موفقیت راه‌اندازی شد و به صورت خودکار در هنگام بوت اجرا خواهد شد.${NC}"
 echo -e "${BLUE}آدرس دسترسی:${NC}"
 echo -e "  http://${SERVER_IP}:8008 - صفحه اصلی"
 echo -e "  http://${SERVER_IP}:8008/app/configs - پیکربندی‌های برنامه"
 echo -e "  http://${SERVER_IP}:8008/ads/configs - پیکربندی‌های تبلیغاتی"
+echo -e "${YELLOW}امنیت:${NC}"
+echo -e "  فایروال به صورت خودکار فعال شده و فقط پورت‌های ضروری باز هستند."
+echo -e "  IP کاربران پس از استفاده موفق از سرویس به طور خودکار به لیست سفید اضافه می‌شوند."
+echo -e "  برای مشاهده لیست IP های مجاز از دستور زیر استفاده کنید:"
+echo -e "  ${BLUE}sudo /usr/local/bin/xui-firewall.sh --list${NC}"
+echo -e "${GREEN}موفق باشید!${NC}"
