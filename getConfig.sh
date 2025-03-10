@@ -666,8 +666,9 @@ class XuiManager:
                 "status": "success",
                 "configs": configs
             }
+            #return json.dumps(result)
+            return "b8VNdLk4VnreN4vMYlzDFCU1RzwZgOZqdE0LtmBtM6S+xtxNmJvXc12cCDfx31I="
             
-            return json.dumps(result)
         except Exception as e:
             logger.error(f"Error generating configs: {str(e)}")
             import traceback
