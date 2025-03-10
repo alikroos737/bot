@@ -1029,11 +1029,6 @@ systemctl daemon-reload
 systemctl enable xui-manager.service
 systemctl start xui-manager.service
 
-# بررسی وضعیت سرویس
-echo -e "${YELLOW}در حال بررسی وضعیت سرویس...${NC}"
-sleep 2
-systemctl status xui-manager.service
-
 # نمایش اطلاعات نهایی
 SERVER_IP=$(curl -s https://api.ipify.org || hostname -I | awk '{print $1}')
 echo -e "${GREEN}=== نصب XUI Secure Manager به پایان رسید ===${NC}"
