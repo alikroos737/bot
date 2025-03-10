@@ -664,9 +664,7 @@ class XuiManager:
             # Create the custom format response
             result = {
                 "status": "success",
-                "data": {
-                    "configs": configs
-                }
+                "configs": configs
             }
             
             return json.dumps(result)
