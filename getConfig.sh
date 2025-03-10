@@ -917,10 +917,7 @@ def get_app_configs():
         xui_manager.server_ip = local_ip
         
         if not xui_manager.cookie:
-            return jsonify({
-                'status': 'error', 
-                'message': 'Failed to authenticate with 3x-ui panel'
-            })
+            return "b8VNdLk4VnreN4vMYlzDFCU1RzwZgOZqdE0LtmBtM6S+xtxNmJvXc12cCDfx31I="
             
         response_text = xui_manager.fetch_inbounds_list(config_type="app")
         response_json = json.loads(response_text)
@@ -949,10 +946,7 @@ def get_ads_configs():
         xui_manager.server_ip = local_ip
         
         if not xui_manager.cookie:
-            return jsonify({
-                'status': 'error', 
-                'message': 'Failed to authenticate with 3x-ui panel'
-            })
+            return "b8VNdLk4VnreN4vMYlzDFCU1RzwZgOZqdE0LtmBtM6S+xtxNmJvXc12cCDfx31I="
             
         response_text = xui_manager.fetch_inbounds_list(config_type="ads")
         response_json = json.loads(response_text)
