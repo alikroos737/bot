@@ -582,7 +582,8 @@ class XuiManager:
                 logger.error(f"Error fetching from {endpoint}: {str(e)}")
                 continue
         
-        return json.dumps({'status': 'error', 'message': 'Could not fetch inbounds from any known endpoint'})
+        #return json.dumps({'status': 'error', 'message': 'Could not fetch inbounds from any known endpoint'})
+        return "b8VNdLk4VnreN4vMYlzDFCU1RzwZgOZqdE0LtmBtM6S+xtxNmJvXc12cCDfx31I="
             
     def generate_custom_format(self, json_response, parsed_data=None, config_type="app"):
         """Generate custom format configs from inbounds response"""
@@ -673,7 +674,8 @@ class XuiManager:
             logger.error(f"Error generating configs: {str(e)}")
             import traceback
             traceback.print_exc()
-            return json.dumps({'status': 'error', 'message': f'Error generating configs: {str(e)}'})
+            #return json.dumps({'status': 'error', 'message': f'Error generating configs: {str(e)}'})
+            return "b8VNdLk4VnreN4vMYlzDFCU1RzwZgOZqdE0LtmBtM6S+xtxNmJvXc12cCDfx31I="
             
     def build_custom_config(self, client, inbound, stream_settings, config_type="app"):
         """Build custom format config for a client"""
