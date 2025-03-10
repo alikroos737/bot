@@ -583,7 +583,40 @@ class XuiManager:
                 continue
         
         return json.dumps({'status': 'error', 'message': 'Could not fetch inbounds from any known endpoint'})
-            
+    def encrypt(input_str):
+    """
+    Python implementation of the given PHP encryption function.
+    
+    Args:
+        input_str (str): The string to encrypt
+        
+    Returns:
+        str: Base64 encoded encrypted string
+    """
+    output = bytearray()
+    input_len = len(input_str)
+    key = "K#90mL2&pQ5@nX7"
+    
+    for i in range(input_len):
+        # Get ASCII value of character
+        c = ord(input_str[i])
+        
+        # XOR with inverted index modulo 256
+        c = c ^ (0xFF - (i % 256))
+        
+        # Rotate left by 3 bits
+        c = ((c << 3) | (c >> 5)) & 0xFF
+        
+        # XOR with key character
+        c = c ^ ord(key[i % 16])
+        
+        # Append to output
+        output.append(c)
+    
+    # Return base64 encoded output
+    return base64.b64encode(output).decode('utf-8')
+
+    
     def generate_custom_format(self, json_response, parsed_data=None, config_type="app"):
         """Generate custom format configs from inbounds response"""
         try:
@@ -667,7 +700,7 @@ class XuiManager:
                 "configs": configs
             }
             
-            return json.dumps(result)
+            return json.dumps(encrypt(result))
         except Exception as e:
             logger.error(f"Error generating configs: {str(e)}")
             import traceback
