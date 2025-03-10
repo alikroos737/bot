@@ -352,6 +352,7 @@ import random
 import os
 import time
 import logging
+import base64
 from flask import Flask, jsonify, request, Response
 
 # تنظیم لاگینگ
