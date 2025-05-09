@@ -47,7 +47,7 @@ echo "در حال تست اسکریپت..."
 "$SCRIPT_PATH"
 
 # ۳. افزودن وظیفه به crontab برای اجرا هر ۱۰ دقیقه
-(crontab -l 2>/dev/null || echo "") | grep -v "check_timeout.sh" | { cat; echo "*/10 * * * * $SCRIPT_PATH"; } | crontab -
+(crontab -l 2>/dev/null || echo "") | grep -v "check_timeout.sh" | { cat; echo "*/5 * * * * $SCRIPT_PATH"; } | crontab -
 
 echo "اسکریپت با موفقیت نصب شد و هر ۱۰ دقیقه اجرا خواهد شد."
 echo "نتایج در فایل $LOG_PATH ذخیره می‌شوند."
