@@ -13,7 +13,7 @@ cat > "$SCRIPT_PATH" << 'EOF'
 
 check_timeout() {
     local IP=$(hostname -I | cut -d' ' -f1)
-    local RESPONSE=$(curl -s "https://check-host.net/check-ping" -H "Accept: application/json" -d "host=8.8.8.8")
+    local RESPONSE=$(curl -s "https://check-host.net/check-ping" -H "Accept: application/json" -d "host=$IP")
     local REQUEST_ID=$(echo $RESPONSE | grep -oP '(?<="request_id":")[^"]*')
     
     if [ -z "$REQUEST_ID" ]; then
