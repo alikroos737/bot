@@ -20,7 +20,8 @@ check_timeout() {
         echo "خطا: شناسه درخواست دریافت نشد" >> $(dirname "$0")/timeout_log.txt
         return 1
     fi
-    
+    echo "$RESPONSE"
+    echo "$IP"
     sleep 30
     
     local RESULT=$(curl -s "https://check-host.net/check-result/$REQUEST_ID" -H "Accept: application/json")
