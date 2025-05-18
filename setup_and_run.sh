@@ -234,9 +234,6 @@ EOL
 # Make the run script executable
 chmod +x run_check.sh
 
-# Install required Python packages
-pip3 install requests
-
 # Run the script
 ./run_check.sh
 
