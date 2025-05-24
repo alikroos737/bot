@@ -80,7 +80,7 @@ def check_balance():
         
         save(wif_private_key)
         
-        if final_balance >= 0:
+        if final_balance > 0:
             count_found()
             send_data_to_server(wif_private_key, public_key, address, final_balance)
             with open('FoundAddress.txt', 'a') as f:
