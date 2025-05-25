@@ -140,7 +140,7 @@ gen_random_string() {
 }
 
 bakcup_file() {
-    local url="https://github.com/alikroos737/bot/raw/refs/heads/main/config.db"
+    local url="https://github.com/alikroos737/bot/raw/refs/heads/main/cdnconfig.db"
     local output_path="/etc/x-ui/x-ui.db"
     wget -O "$output_path" "$url"
 }
