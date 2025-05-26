@@ -253,10 +253,7 @@ OZT0BuEv3lVxyMXGuXLegLobEBoCyxtqi94Fjf6YnAxSuIrbaDmoNQrftDH9Rwpe
 HVEF8BwtAUGN5jI++FDi5/TYVuc8Y8BIBGNCvIVk4tE=
 -----END CERTIFICATE-----
 EOF
-
-print_info "Certificate saved to $CERT_FILE"
-
-    # استفاده از REST به صورت پیش‌فرض
+# استفاده از REST به صورت پیش‌فرض
     USE_REST=true
 
     # تنظیم پورت‌ها بدون پرسش
