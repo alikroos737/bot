@@ -224,7 +224,7 @@ install_marzban_node() {
     mkdir -p "$DATA_DIR" "$APP_DIR" "$DATA_MAIN_DIR"
 
     # ذخیره گواهی مستقیم
-    cat > "$CERT_FILE" <<EOF
+cat > "$CERT_FILE" <<EOF
 -----BEGIN CERTIFICATE-----
 MIIEnDCCAoQCAQAwDQYJKoZIhvcNAQENBQAwEzERMA8GA1UEAwwIR296YXJnYWgw
 IBcNMjUwNTI2MTMwNjA3WhgPMjEyNTA1MDIxMzA2MDdaMBMxETAPBgNVBAMMCEdv
@@ -254,7 +254,7 @@ HVEF8BwtAUGN5jI++FDi5/TYVuc8Y8BIBGNCvIVk4tE=
 -----END CERTIFICATE-----
 EOF
 
-    print_info "Certificate saved to $CERT_FILE"
+print_info "Certificate saved to $CERT_FILE"
 
     # استفاده از REST به صورت پیش‌فرض
     USE_REST=true
