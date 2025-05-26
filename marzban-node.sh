@@ -364,16 +364,23 @@ is_marzban_node_up() {
 
 install_command() {
     check_running_as_root
-    # Check if marzban is already installed
+
+    # حذف Marzban-node قبلی بدون سوال
     if is_marzban_node_installed; then
-        colorized_echo red "Marzban-node is already installed at $APP_DIR"
-        read -p "Do you want to override the previous installation? (y/n) "
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            colorized_echo red "Aborted installation"
-            exit 1
+        colorized_echo yellow "Marzban-node is already installed at $APP_DIR. Removing..."
+        detect_compose
+        if is_marzban_node_up; then
+            down_marzban_node
         fi
+        uninstall_marzban_node_script
+        uninstall_marzban_node
+        uninstall_marzban_node_docker_images
+        uninstall_marzban_node_data_files
     fi
+
     detect_os
+
+    # نصب ابزارهای مورد نیاز در صورت نبودشان
     if ! command -v jq >/dev/null 2>&1; then
         install_package jq
     fi
@@ -383,13 +390,16 @@ install_command() {
     if ! command -v docker >/dev/null 2>&1; then
         install_docker
     fi
+
     detect_compose
     install_marzban_node_script
     install_marzban_node
     up_marzban_node
-    follow_marzban_node_logs
-    echo "Use your IP: $NODE_IP and defaults ports: $SERVICE_PORT and $XRAY_API_PORT to setup your Marzban Main Panel"
+
+    echo "✅ Marzban-node installed successfully!"
+    echo "🌐 Use your IP: $NODE_IP and default ports: $SERVICE_PORT and $XRAY_API_PORT to configure your Marzban Main Panel"
 }
+
 
 uninstall_command() {
     check_running_as_root
