@@ -240,12 +240,35 @@ install_marzban_node() {
     # Prompt the user to input the certificate
     echo -e "Please paste the content of the Client Certificate, press ENTER on a new line when finished: "
     
-    while IFS= read -r line; do
-        if [[ -z $line ]]; then
-            break
-        fi
-        echo "$line" >>"$CERT_FILE"
-    done
+    cat > "$CERT_FILE" <<EOF
+-----BEGIN CERTIFICATE-----
+MIIEnDCCAoQCAQAwDQYJKoZIhvcNAQENBQAwEzERMA8GA1UEAwwIR296YXJnYWgw
+IBcNMjUwNTI2MTMwNjA3WhgPMjEyNTA1MDIxMzA2MDdaMBMxETAPBgNVBAMMCEdv
+emFyZ2FoMIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAtPqZiu1ApapV
+D4Dp9x/kiWvbVz5s62iXfGJVs53jBOKXPv1+TH8p7HaTsTo6dvau6Q1G38TrAOEj
+QHOVnM1X25ufaCgViMKkFj4un/Mj1q0qkhnVRyZiyP/ork2hmo0BT8YNnU3sMcNt
+psWnyWz3gyHhpsRSEwiEJr8iM6jcfs5Pi94RVIh2EChawfZQH+XdRgeuHOl+dYOz
+Qdn8t926rZ3ms1Vugc6TvO2pknKsam2QaaDDS1KB92Ai3NcCxKJ548QBGiuMb7B2
+cD4YzH7SgMAa/tEkSWe7Xz6ykM7Hg8K2UHVqdFUxgWUNuTi5hBe9QkuRbNB4kDHX
+V/F/Vj+pMUa8AObWp778bkQn7Dtomf+StflQ8gv7lepgtlHMxxtwBm8Y2FWxqPUb
+4D8FqRUeWETsYjl60QsnZntKbrWbHwN6JmI4YKZcYosvvYyg6KefcYcGDEAVo5yq
+qG6er3cMwqS2E7DkRCgPZkMKR/Qizlkl5dj/TVsxTB+zVpVyAdL4jpq1bOarf1tW
+Y3T5S3eqM7/wP23mNsgrtpezrLTlSJD344/sPgSbglvDayp1X6kdIuNJhqQz32K6
+StDW23Z+2cIuHt7CJgh42GA+rMoEURw0vTO7f3xael2ESrRTmjRpuLsx6w2yzuro
+z1GyJo+KFmQiHpUZO31Yd0vv6iQWHHcCAwEAATANBgkqhkiG9w0BAQ0FAAOCAgEA
+USp4MXONFdqGx6pIsfRIe3VgymBX5V3rlNsN0YVpCVyWuhYihMXca0ebjPDwYXgL
+wKmhnDiaICuBI4iZT80L/QzVOlIeF3hdngiyW5X322Agn1rinW9v2G/MIxEDuFSt
+xIZGq8dnFWRZYq/JpVOlrTI1In5HrbakYoFJz7n/q49nIs0V9AiEqhgmPAELXJqG
+9oahgAZVAIcGw3XBVlMTlFDvoMyzFin2nLnkzGwmUXnxS5ccnabEJrQ87OLQX0HD
+CXuqAdwYzhYqy32B5WmaD0SFPutgEDSRcyC5wg2PLG6hfaGJ7vMBA9QIthf4BfJ3
+8UeDTaX9C6Y4QbdkqRFz482l+mUTiP5XXYFSuNkAIHz4WiidWSoTPuma3Kbqvcct
+q0or6d0a9SpN85C/7x0aPejSnjcpJxq4SQW0OlV2kjHvBDf+Khcyz/xJUJJJlzXj
+UIP7a6nML2kSIuXaYt3RVMw/kaIGyXrOoYSeiDKCHKwu/e2zD6kMxsx1quXtPpD3
+OZT0BuEv3lVxyMXGuXLegLobEBoCyxtqi94Fjf6YnAxSuIrbaDmoNQrftDH9Rwpe
+1F4rqbem88sGn48vNvojZ/joproaYIr64y0jGeQXTBOR8fNwzroUGBtBosD2hSjK
+HVEF8BwtAUGN5jI++FDi5/TYVuc8Y8BIBGNCvIVk4tE=
+-----END CERTIFICATE-----
+EOF
     
     print_info "Certificate saved to $CERT_FILE"
     
