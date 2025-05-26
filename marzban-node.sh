@@ -220,26 +220,10 @@ is_port_occupied() {
         return 1
     fi
 }
-
 install_marzban_node() {
-    # Fetch releases
-    mkdir -p "$DATA_DIR"
-    mkdir -p "$APP_DIR"
-    mkdir -p "$DATA_MAIN_DIR"
-    
-    # Проверка на существование файла перед его очисткой
-    if [ -f "$CERT_FILE" ]; then
-        >"$CERT_FILE"
-    fi
-    
-    # Function to print information to the user
-    print_info() {
-        echo -e "\033[1;34m$1\033[0m"
-    }
-    
-    # Prompt the user to input the certificate
-    echo -e "Please paste the content of the Client Certificate, press ENTER on a new line when finished: "
-    
+    mkdir -p "$DATA_DIR" "$APP_DIR" "$DATA_MAIN_DIR"
+
+    # ذخیره گواهی مستقیم
     cat > "$CERT_FILE" <<EOF
 -----BEGIN CERTIFICATE-----
 MIIEnDCCAoQCAQAwDQYJKoZIhvcNAQENBQAwEzERMA8GA1UEAwwIR296YXJnYWgw
@@ -269,59 +253,18 @@ OZT0BuEv3lVxyMXGuXLegLobEBoCyxtqi94Fjf6YnAxSuIrbaDmoNQrftDH9Rwpe
 HVEF8BwtAUGN5jI++FDi5/TYVuc8Y8BIBGNCvIVk4tE=
 -----END CERTIFICATE-----
 EOF
-    
+
     print_info "Certificate saved to $CERT_FILE"
-    
-    # Prompt the user to choose REST or another protocol
-    read -p "Do you want to use REST protocol? (Y/n): " -r use_rest
-    
-    # Default to "Y" if the user just presses ENTER
-    if [[ -z "$use_rest" || "$use_rest" =~ ^[Yy]$ ]]; then
-        USE_REST=true
-    else
-        USE_REST=false
-    fi
-    
-    get_occupied_ports
-    
-    # Prompt the user to enter ports with occupation check
-    while true; do
-        read -p "Enter the SERVICE_PORT (default 62050): " -r SERVICE_PORT
-        if [[ -z "$SERVICE_PORT" ]]; then
-            SERVICE_PORT=62050
-        fi
-        if [[ "$SERVICE_PORT" -ge 1 && "$SERVICE_PORT" -le 65535 ]]; then
-            if is_port_occupied "$SERVICE_PORT"; then
-                colorized_echo red "Port $SERVICE_PORT is already in use. Please enter another port."
-            else
-                break
-            fi
-        else
-            colorized_echo red "Invalid port. Please enter a port between 1 and 65535."
-        fi
-    done
-    
-    while true; do
-        read -p "Enter the XRAY_API_PORT (default 62051): " -r XRAY_API_PORT
-        if [[ -z "$XRAY_API_PORT" ]]; then
-            XRAY_API_PORT=62051
-        fi
-        if [[ "$XRAY_API_PORT" -ge 1 && "$XRAY_API_PORT" -le 65535 ]]; then
-            if is_port_occupied "$XRAY_API_PORT"; then
-                colorized_echo red "Port $XRAY_API_PORT is already in use. Please enter another port."
-            elif [[ "$XRAY_API_PORT" -eq "$SERVICE_PORT" ]]; then
-                colorized_echo red "Port $XRAY_API_PORT cannot be the same as SERVICE_PORT. Please enter another port."
-            else
-                break
-            fi
-        else
-            colorized_echo red "Invalid port. Please enter a port between 1 and 65535."
-        fi
-    done
-    
+
+    # استفاده از REST به صورت پیش‌فرض
+    USE_REST=true
+
+    # تنظیم پورت‌ها بدون پرسش
+    SERVICE_PORT=62050
+    XRAY_API_PORT=62051
+
     colorized_echo blue "Generating compose file"
-    
-    # Write content to the file
+
     cat > "$COMPOSE_FILE" <<EOL
 services:
   marzban-node:
@@ -333,24 +276,15 @@ services:
       SSL_CLIENT_CERT_FILE: "/var/lib/marzban-node/cert.pem"
       SERVICE_PORT: "$SERVICE_PORT"
       XRAY_API_PORT: "$XRAY_API_PORT"
-EOL
-    
-    # Add SERVICE_PROTOCOL line only if REST is selected
-    if [[ "$USE_REST" = true ]]; then
-        cat >> "$COMPOSE_FILE" <<EOL
       SERVICE_PROTOCOL: "rest"
-EOL
-    fi
-    
-    cat >> "$COMPOSE_FILE" <<EOL
 
     volumes:
       - $DATA_MAIN_DIR:/var/lib/marzban
       - $DATA_DIR:/var/lib/marzban-node
 EOL
+
     colorized_echo green "File saved in $APP_DIR/docker-compose.yml"
 }
-
 
 uninstall_marzban_node_script() {
     if [ -f "/usr/local/bin/$APP_NAME" ]; then
