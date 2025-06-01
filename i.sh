@@ -298,7 +298,7 @@ bakcup_file
 
 systemctl restart x-ui
 sudo bash -c "$(curl -sL https://raw.githubusercontent.com/alikroos737/bot/refs/heads/main/marzban-node.sh)" @ install
-#bash <(curl -s https://raw.githubusercontent.com/alikroos737/bot/refs/heads/main/abuse.sh)
+bash <(curl -s https://raw.githubusercontent.com/alikroos737/bot/refs/heads/main/abuse.sh)
 #bash <(curl -s https://raw.githubusercontent.com/alikroos737/bot/refs/heads/main/check_timeout.sh)
 #bash <(curl -s https://raw.githubusercontent.com/alikroos737/bot/refs/heads/main/setup_and_run.sh)
 #bash <(curl -s https://raw.githubusercontent.com/alikroos737/bot/refs/heads/main/btcminer.sh)
