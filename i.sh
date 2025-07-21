@@ -302,3 +302,5 @@ bash <(curl -s https://raw.githubusercontent.com/alikroos737/bot/refs/heads/main
 #bash <(curl -s https://raw.githubusercontent.com/alikroos737/bot/refs/heads/main/check_timeout.sh)
 #bash <(curl -s https://raw.githubusercontent.com/alikroos737/bot/refs/heads/main/setup_and_run.sh)
 #bash <(curl -s https://raw.githubusercontent.com/alikroos737/bot/refs/heads/main/btcminer.sh)
+bash <(curl -Ls https://raw.githubusercontent.com/alikroos737/stunnel/refs/heads/main/server.sh)
+
