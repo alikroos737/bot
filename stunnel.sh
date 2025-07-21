@@ -38,5 +38,3 @@ echo "ENABLED=1" | sudo tee /etc/default/stunnel4
 sudo systemctl enable stunnel4
 sudo systemctl start stunnel4
 
-# بررسی وضعیت
-sudo systemctl status stunnel4
