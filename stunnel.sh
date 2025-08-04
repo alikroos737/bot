@@ -24,7 +24,7 @@ pid = /var/run/stunnel4/stunnel.pid
 
 [vpn-server]
 accept = 443
-connect = 127.0.0.1:8880
+connect = 127.0.0.1:888
 EOF
 
 # ایجاد دایرکتوری PID
