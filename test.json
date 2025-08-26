@@ -1,102 +1,102 @@
- {
-    "log": {
-        "level": "error"
-    },
-    "dns": {
-        "servers": [
-            {
-                "tag": "dns-remote",
-                "address": "1.1.1.2",
-                "detour": "proxy"
-            },
-            {
-                "tag": "dns-local",
-                "address": "local",
-                "detour": "direct"
-            }
-        ],
-        "rules": [
-            {
-                "outbound": "any",
-                "server": "dns-local"
-            }
-        ],
-        "final": "dns-remote",
-        "strategy": "prefer_ipv4"
-    },
-    "inbounds": [
-        {
-            "type": "tun",
-            "tag": "tun-in",
-            "interface_name": "sing-tun",
-            "address": [
-                "172.19.0.1\/30",
-                "fdfe:dcba:9876::1\/126"
-            ],
-            "auto_route": true,
-            "route_exclude_address": [
-                "192.168.0.0\/16",
-                "fc00::\/7"
-            ],
-            "sniff": true,
-            "domain_strategy": "prefer_ipv4"
-        }
-    ],
-    "outbounds": [
-        {
-            "type": "selector",
-            "tag": "proxy",
-            "outbounds": [
-                "Best Latency",
-                "TEST - 300MB - 2H",
-                "TEST - 300MB - 2H (2)"
-            ],
-            "interrupt_exist_connections": true
-        },
-        {
-            "type": "urltest",
-            "tag": "Best Latency",
-            "outbounds": [
-                "TEST - 300MB - 2H",
-                "TEST - 300MB - 2H (2)"
-            ]
-        },
-        {
-            "type": "direct",
-            "tag": "direct"
-        },
-        {
-            "type": "block",
-            "tag": "block"
-        },
-        {
-            "type": "dns",
-            "tag": "dns-out"
-        },
-        {
-            "type": "vless",
-            "tag": "TEST - 300MB - 2H",
-            "server": "test.vipclubiran.ir",
-            "server_port": 2053,
-            "uuid": "b9e88809-27b6-48c2-b1fb-08e541e97ba8",
-            "multiplex": {
-                "enabled": false,
-                "protocol": "h2mux",
-                "max_streams": 8
-            }
-        },
-        {
-            "type": "vless",
-            "tag": "TEST - 300MB - 2H (2)",
-            "server": "test.vipclubiran.ir",
-            "server_port": 2053,
-            "uuid": "b9e88809-27b6-48c2-b1fb-08e541e97ba8",
-            "multiplex": {
-                "enabled": false,
-                "protocol": "h2mux",
-                "max_streams": 8
-            }
-        },
+{
+"log":{
+"level":"error"
+},
+"dns":{
+"servers":[
+{
+"tag":"dns-remote",
+"address":"1.1.1.2",
+"detour":"proxy"
+},
+{
+"tag":"dns-local",
+"address":"local",
+"detour":"direct"
+}
+],
+"rules":[
+{
+"outbound":"any",
+"server":"dns-local"
+}
+],
+"final":"dns-remote",
+"strategy":"prefer_ipv4"
+},
+"inbounds":[
+{
+"type":"tun",
+"tag":"tun-in",
+"interface_name":"sing-tun",
+"address":[
+"172.19.0.1\/30",
+"fdfe:dcba:9876::1\/126"
+],
+"auto_route":true,
+"route_exclude_address":[
+"192.168.0.0\/16",
+"fc00::\/7"
+],
+"sniff":true,
+"domain_strategy":"prefer_ipv4"
+}
+],
+"outbounds":[
+{
+"type":"selector",
+"tag":"proxy",
+"outbounds":[
+"Best Latency",
+"TEST - 300MB - 2H",
+"TEST - 300MB - 2H (2)"
+],
+"interrupt_exist_connections":true
+},
+{
+"type":"urltest",
+"tag":"Best Latency",
+"outbounds":[
+"TEST - 300MB - 2H",
+"TEST - 300MB - 2H (2)"
+]
+},
+{
+"type":"direct",
+"tag":"direct"
+},
+{
+"type":"block",
+"tag":"block"
+},
+{
+"type":"dns",
+"tag":"dns-out"
+},
+{
+"type":"vless",
+"tag":"TEST - 300MB - 2H",
+"server":"test.vipclubiran.ir",
+"server_port":2053,
+"uuid":"b9e88809-27b6-48c2-b1fb-08e541e97ba8",
+"multiplex":{
+"enabled":false,
+"protocol":"h2mux",
+"max_streams":8
+}
+},
+{
+"type":"vless",
+"tag":"TEST - 300MB - 2H (2)",
+"server":"test.vipclubiran.ir",
+"server_port":2053,
+"uuid":"b9e88809-27b6-48c2-b1fb-08e541e97ba8",
+"multiplex":{
+"enabled":false,
+"protocol":"h2mux",
+"max_streams":8
+}
+},
 {
 "name":"V2RayServer (10)",
 "type":"vless",
@@ -1057,27 +1057,26 @@
 }
 }
 }
-
-    ],
-    "route": {
-        "rules": [
-            {
-                "protocol": "dns",
-                "outbound": "dns-out"
-            },
-            {
-                "ip_is_private": true,
-                "outbound": "direct"
-            }
-        ],
-        "final": "proxy",
-        "auto_detect_interface": true,
-        "override_android_vpn": true
-    },
-    "experimental": {
-        "cache_file": {
-            "enabled": true,
-            "store_rdrc": true
-        }
-    }
+],
+"route":{
+"rules":[
+{
+"protocol":"dns",
+"outbound":"dns-out"
+},
+{
+"ip_is_private":true,
+"outbound":"direct"
+}
+],
+"final":"proxy",
+"auto_detect_interface":true,
+"override_android_vpn":true
+},
+"experimental":{
+"cache_file":{
+"enabled":true,
+"store_rdrc":true
+}
+}
 }
