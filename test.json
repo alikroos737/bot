@@ -96,7 +96,7 @@
                 "protocol": "h2mux",
                 "max_streams": 8
             }
-        },[
+        },
 {
 "name":"V2RayServer (10)",
 "type":"vless",
@@ -1057,7 +1057,7 @@
 }
 }
 }
-]
+
     ],
     "route": {
         "rules": [
