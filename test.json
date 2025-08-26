@@ -1,0 +1,1083 @@
+ {
+    "log": {
+        "level": "error"
+    },
+    "dns": {
+        "servers": [
+            {
+                "tag": "dns-remote",
+                "address": "1.1.1.2",
+                "detour": "proxy"
+            },
+            {
+                "tag": "dns-local",
+                "address": "local",
+                "detour": "direct"
+            }
+        ],
+        "rules": [
+            {
+                "outbound": "any",
+                "server": "dns-local"
+            }
+        ],
+        "final": "dns-remote",
+        "strategy": "prefer_ipv4"
+    },
+    "inbounds": [
+        {
+            "type": "tun",
+            "tag": "tun-in",
+            "interface_name": "sing-tun",
+            "address": [
+                "172.19.0.1\/30",
+                "fdfe:dcba:9876::1\/126"
+            ],
+            "auto_route": true,
+            "route_exclude_address": [
+                "192.168.0.0\/16",
+                "fc00::\/7"
+            ],
+            "sniff": true,
+            "domain_strategy": "prefer_ipv4"
+        }
+    ],
+    "outbounds": [
+        {
+            "type": "selector",
+            "tag": "proxy",
+            "outbounds": [
+                "Best Latency",
+                "TEST - 300MB - 2H",
+                "TEST - 300MB - 2H (2)"
+            ],
+            "interrupt_exist_connections": true
+        },
+        {
+            "type": "urltest",
+            "tag": "Best Latency",
+            "outbounds": [
+                "TEST - 300MB - 2H",
+                "TEST - 300MB - 2H (2)"
+            ]
+        },
+        {
+            "type": "direct",
+            "tag": "direct"
+        },
+        {
+            "type": "block",
+            "tag": "block"
+        },
+        {
+            "type": "dns",
+            "tag": "dns-out"
+        },
+        {
+            "type": "vless",
+            "tag": "TEST - 300MB - 2H",
+            "server": "test.vipclubiran.ir",
+            "server_port": 2053,
+            "uuid": "b9e88809-27b6-48c2-b1fb-08e541e97ba8",
+            "multiplex": {
+                "enabled": false,
+                "protocol": "h2mux",
+                "max_streams": 8
+            }
+        },
+        {
+            "type": "vless",
+            "tag": "TEST - 300MB - 2H (2)",
+            "server": "test.vipclubiran.ir",
+            "server_port": 2053,
+            "uuid": "b9e88809-27b6-48c2-b1fb-08e541e97ba8",
+            "multiplex": {
+                "enabled": false,
+                "protocol": "h2mux",
+                "max_streams": 8
+            }
+        },[
+{
+"name":"V2RayServer (10)",
+"type":"vless",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"port":443,
+"ping":474,
+"config":{
+"type":"vless",
+"tag":"V2RayServer (10)",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"server_port":443,
+"uuid":"5db2ea12-d4e9-4824-b06c-978d5f6befd0",
+"multiplex":{
+"enabled":false,
+"protocol":"h2mux",
+"max_streams":8
+},
+"transport":{
+"type":"ws",
+"path":"/jppuicws",
+"headers":{
+"Host":"638917610534432979.zagreb-prx-dnraabx.info"
+}
+},
+"tls":{
+"enabled":true,
+"server_name":"638917610534432979.zagreb-prx-dnraabx.info"
+}
+}
+},
+{
+"name":"V2RayServer (29)",
+"type":"vless",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"port":443,
+"ping":638,
+"config":{
+"type":"vless",
+"tag":"V2RayServer (29)",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"server_port":443,
+"uuid":"b5d9755c-90cc-43f8-9d9c-3acad99bd711",
+"multiplex":{
+"enabled":false,
+"protocol":"h2mux",
+"max_streams":8
+},
+"transport":{
+"type":"ws",
+"path":"/haayyqws",
+"headers":{
+"Host":"638914973967161101.malayer-prx-dnraabv.info"
+}
+},
+"tls":{
+"enabled":true,
+"server_name":"638914973967161101.malayer-prx-dnraabv.info"
+}
+}
+},
+{
+"name":"V2RayServer (36)",
+"type":"vless",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"port":443,
+"ping":492,
+"config":{
+"type":"vless",
+"tag":"V2RayServer (36)",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"server_port":443,
+"uuid":"248b794e-905a-47b4-8c23-fa15746a8d9a",
+"multiplex":{
+"enabled":false,
+"protocol":"h2mux",
+"max_streams":8
+},
+"transport":{
+"type":"ws",
+"path":"/rsrjowws",
+"headers":{
+"Host":"638917610534435117.zagreb-prx-dnraabx.info"
+}
+},
+"tls":{
+"enabled":true,
+"server_name":"638917610534435117.zagreb-prx-dnraabx.info"
+}
+}
+},
+{
+"name":"V2RayServer (51)",
+"type":"vless",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"port":443,
+"ping":480,
+"config":{
+"type":"vless",
+"tag":"V2RayServer (51)",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"server_port":443,
+"uuid":"486ae9c4-f212-4d06-beac-060e7fdd9ebe",
+"multiplex":{
+"enabled":false,
+"protocol":"h2mux",
+"max_streams":8
+},
+"transport":{
+"type":"ws",
+"path":"/vnygwsws",
+"headers":{
+"Host":"638915692126716954.brussels-prx-dnraabx.info"
+}
+},
+"tls":{
+"enabled":true,
+"server_name":"638915692126716954.brussels-prx-dnraabx.info"
+}
+}
+},
+{
+"name":"V2RayServer (60)",
+"type":"vless",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"port":443,
+"ping":489,
+"config":{
+"type":"vless",
+"tag":"V2RayServer (60)",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"server_port":443,
+"uuid":"33e9dab9-b05a-4453-8b13-ac32045e3ad0",
+"multiplex":{
+"enabled":false,
+"protocol":"h2mux",
+"max_streams":8
+},
+"transport":{
+"type":"ws",
+"path":"/gkwefmws",
+"headers":{
+"Host":"638912109259117359.birjand-prx-dnraabs.info"
+}
+},
+"tls":{
+"enabled":true,
+"server_name":"638912109259117359.birjand-prx-dnraabs.info"
+}
+}
+},
+{
+"name":"V2RayServer (71)",
+"type":"vless",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"port":443,
+"ping":636,
+"config":{
+"type":"vless",
+"tag":"V2RayServer (71)",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"server_port":443,
+"uuid":"b5d9755c-90cc-43f8-9d9c-3acad99bd711",
+"multiplex":{
+"enabled":false,
+"protocol":"h2mux",
+"max_streams":8
+},
+"transport":{
+"type":"ws",
+"path":"/haayyqws",
+"headers":{
+"Host":"638917355170457691.dezful-prx-dnraabv.info"
+}
+},
+"tls":{
+"enabled":true,
+"server_name":"638917355170457691.dezful-prx-dnraabv.info"
+}
+}
+},
+{
+"name":"V2RayServer (80)",
+"type":"vless",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"port":443,
+"ping":1343,
+"config":{
+"type":"vless",
+"tag":"V2RayServer (80)",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"server_port":443,
+"uuid":"6fe4cdfd-11a8-4d3b-94a4-4b735da523de",
+"multiplex":{
+"enabled":false,
+"protocol":"h2mux",
+"max_streams":8
+},
+"transport":{
+"type":"ws",
+"path":"/ajnexnws",
+"headers":{
+"Host":"638915863506527301.rome-prx-dnraabx.info"
+}
+},
+"tls":{
+"enabled":true,
+"server_name":"638915863506527301.rome-prx-dnraabx.info"
+}
+}
+},
+{
+"name":"V2RayServer (86)",
+"type":"vless",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"port":443,
+"ping":536,
+"config":{
+"type":"vless",
+"tag":"V2RayServer (86)",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"server_port":443,
+"uuid":"ae7ff8ae-7f44-447e-9001-738aa485cdb3",
+"multiplex":{
+"enabled":false,
+"protocol":"h2mux",
+"max_streams":8
+},
+"transport":{
+"type":"ws",
+"path":"/eoxldbws",
+"headers":{
+"Host":"638912109259105253.birjand-prx-dnraabs.info"
+}
+},
+"tls":{
+"enabled":true,
+"server_name":"638912109259105253.birjand-prx-dnraabs.info"
+}
+}
+},
+{
+"name":"V2RayServer (127)",
+"type":"vless",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"port":443,
+"ping":770,
+"config":{
+"type":"vless",
+"tag":"V2RayServer (127)",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"server_port":443,
+"uuid":"cbb0954e-201f-45f7-ad54-ae1868bdff39",
+"multiplex":{
+"enabled":false,
+"protocol":"h2mux",
+"max_streams":8
+},
+"transport":{
+"type":"ws",
+"path":"/kcclrxws",
+"headers":{
+"Host":"638914974005845948.mashhad-prx-dnraabv.info"
+}
+},
+"tls":{
+"enabled":true,
+"server_name":"638914974005845948.mashhad-prx-dnraabv.info"
+}
+}
+},
+{
+"name":"V2RayServer (137)",
+"type":"vless",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"port":443,
+"ping":555,
+"config":{
+"type":"vless",
+"tag":"V2RayServer (137)",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"server_port":443,
+"uuid":"7d53a9d3-e267-4549-aa60-2eb337e40f6d",
+"multiplex":{
+"enabled":false,
+"protocol":"h2mux",
+"max_streams":8
+},
+"transport":{
+"type":"ws",
+"path":"/klglfaws",
+"headers":{
+"Host":"638915692126728901.brussels-prx-dnraabx.info"
+}
+},
+"tls":{
+"enabled":true,
+"server_name":"638915692126728901.brussels-prx-dnraabx.info"
+}
+}
+},
+{
+"name":"V2RayServer (142)",
+"type":"vless",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"port":443,
+"ping":456,
+"config":{
+"type":"vless",
+"tag":"V2RayServer (142)",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"server_port":443,
+"uuid":"0c8f6c28-abb1-444d-96b8-e6d5d3def45b",
+"multiplex":{
+"enabled":false,
+"protocol":"h2mux",
+"max_streams":8
+},
+"transport":{
+"type":"ws",
+"path":"/kqstgwws",
+"headers":{
+"Host":"638915692126706938.brussels-prx-dnraabx.info"
+}
+},
+"tls":{
+"enabled":true,
+"server_name":"638915692126706938.brussels-prx-dnraabx.info"
+}
+}
+},
+{
+"name":"V2RayServer (149)",
+"type":"vless",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"port":443,
+"ping":2284,
+"config":{
+"type":"vless",
+"tag":"V2RayServer (149)",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"server_port":443,
+"uuid":"ca49f100-4877-443e-a5c7-916149a98925",
+"multiplex":{
+"enabled":false,
+"protocol":"h2mux",
+"max_streams":8
+},
+"transport":{
+"type":"ws",
+"path":"/bybklzws",
+"headers":{
+"Host":"638915863506520898.rome-prx-dnraabx.info"
+}
+},
+"tls":{
+"enabled":true,
+"server_name":"638915863506520898.rome-prx-dnraabx.info"
+}
+}
+},
+{
+"name":"V2RayServer (150)",
+"type":"vless",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"port":443,
+"ping":913,
+"config":{
+"type":"vless",
+"tag":"V2RayServer (150)",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"server_port":443,
+"uuid":"f8df5829-5a07-4e0a-9384-0b2bf145d731",
+"multiplex":{
+"enabled":false,
+"protocol":"h2mux",
+"max_streams":8
+},
+"transport":{
+"type":"ws",
+"path":"/aoxubows",
+"headers":{
+"Host":"638913960260174819.dezful-prx-dnraabv.info"
+}
+},
+"tls":{
+"enabled":true,
+"server_name":"638913960260174819.dezful-prx-dnraabv.info"
+}
+}
+},
+{
+"name":"V2RayServer (163)",
+"type":"vless",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"port":443,
+"ping":490,
+"config":{
+"type":"vless",
+"tag":"V2RayServer (163)",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"server_port":443,
+"uuid":"6b6fcb23-0cc5-4693-b7b5-164a7b86e605",
+"multiplex":{
+"enabled":false,
+"protocol":"h2mux",
+"max_streams":8
+},
+"transport":{
+"type":"ws",
+"path":"/folxzows",
+"headers":{
+"Host":"638914974005857777.mashhad-prx-dnraabv.info"
+}
+},
+"tls":{
+"enabled":true,
+"server_name":"638914974005857777.mashhad-prx-dnraabv.info"
+}
+}
+},
+{
+"name":"V2RayServer (166)",
+"type":"vless",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"port":443,
+"ping":489,
+"config":{
+"type":"vless",
+"tag":"V2RayServer (166)",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"server_port":443,
+"uuid":"973b8398-98e7-4782-9061-5a20541e48b2",
+"multiplex":{
+"enabled":false,
+"protocol":"h2mux",
+"max_streams":8
+},
+"transport":{
+"type":"ws",
+"path":"/oyqhejws",
+"headers":{
+"Host":"638912109263485342.esfahan-prx-dnraabs.info"
+}
+},
+"tls":{
+"enabled":true,
+"server_name":"638912109263485342.esfahan-prx-dnraabs.info"
+}
+}
+},
+{
+"name":"V2RayServer (174)",
+"type":"vless",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"port":443,
+"ping":467,
+"config":{
+"type":"vless",
+"tag":"V2RayServer (174)",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"server_port":443,
+"uuid":"41d976d0-b7cd-45a7-8bbb-5781f997881d",
+"multiplex":{
+"enabled":false,
+"protocol":"h2mux",
+"max_streams":8
+},
+"transport":{
+"type":"ws",
+"path":"/tyfrpdws",
+"headers":{
+"Host":"638915692126712350.brussels-prx-dnraabx.info"
+}
+},
+"tls":{
+"enabled":true,
+"server_name":"638915692126712350.brussels-prx-dnraabx.info"
+}
+}
+},
+{
+"name":"V2RayServer (207)",
+"type":"vless",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"port":443,
+"ping":478,
+"config":{
+"type":"vless",
+"tag":"V2RayServer (207)",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"server_port":443,
+"uuid":"e445d701-471a-4fd4-b2be-eb4e8b43cd31",
+"multiplex":{
+"enabled":false,
+"protocol":"h2mux",
+"max_streams":8
+},
+"transport":{
+"type":"ws",
+"path":"/gifsxtws",
+"headers":{
+"Host":"638917355170510471.kish-prx-dnraabv.info"
+}
+},
+"tls":{
+"enabled":true,
+"server_name":"638917355170510471.kish-prx-dnraabv.info"
+}
+}
+},
+{
+"name":"V2RayServer (213)",
+"type":"vless",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"port":443,
+"ping":471,
+"config":{
+"type":"vless",
+"tag":"V2RayServer (213)",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"server_port":443,
+"uuid":"1b906493-dba8-47a0-9a9e-25af97f52b80",
+"multiplex":{
+"enabled":false,
+"protocol":"h2mux",
+"max_streams":8
+},
+"transport":{
+"type":"ws",
+"path":"/jgqrjcws",
+"headers":{
+"Host":"638913960258214500.birjand-prx-dnraabv.info"
+}
+},
+"tls":{
+"enabled":true,
+"server_name":"638913960258214500.birjand-prx-dnraabv.info"
+}
+}
+},
+{
+"name":"V2RayServer (249)",
+"type":"vless",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"port":443,
+"ping":450,
+"config":{
+"type":"vless",
+"tag":"V2RayServer (249)",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"server_port":443,
+"uuid":"9064c117-4ae2-4810-b236-e0cf18494050",
+"multiplex":{
+"enabled":false,
+"protocol":"h2mux",
+"max_streams":8
+},
+"transport":{
+"type":"ws",
+"path":"/cnaaayws",
+"headers":{
+"Host":"638913960262164058.esfahan-prx-dnraabv.info"
+}
+},
+"tls":{
+"enabled":true,
+"server_name":"638913960262164058.esfahan-prx-dnraabv.info"
+}
+}
+},
+{
+"name":"V2RayServer (257)",
+"type":"vless",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"port":443,
+"ping":533,
+"config":{
+"type":"vless",
+"tag":"V2RayServer (257)",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"server_port":443,
+"uuid":"e3399c41-a4c6-419f-85b4-8ccf68ac2bc7",
+"multiplex":{
+"enabled":false,
+"protocol":"h2mux",
+"max_streams":8
+},
+"transport":{
+"type":"ws",
+"path":"/wiiyndws",
+"headers":{
+"Host":"638914974005852440.mashhad-prx-dnraabv.info"
+}
+},
+"tls":{
+"enabled":true,
+"server_name":"638914974005852440.mashhad-prx-dnraabv.info"
+}
+}
+},
+{
+"name":"V2RayServer (280)",
+"type":"vless",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"port":443,
+"ping":513,
+"config":{
+"type":"vless",
+"tag":"V2RayServer (280)",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"server_port":443,
+"uuid":"d75b01f8-d326-441c-bd2b-d56cfdfac9a4",
+"multiplex":{
+"enabled":false,
+"protocol":"h2mux",
+"max_streams":8
+},
+"transport":{
+"type":"ws",
+"path":"/cqhnaews",
+"headers":{
+"Host":"638915525322859157.malayer-prx-dnraabv.info"
+}
+},
+"tls":{
+"enabled":true,
+"server_name":"638915525322859157.malayer-prx-dnraabv.info"
+}
+}
+},
+{
+"name":"V2RayServer (282)",
+"type":"vless",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"port":443,
+"ping":468,
+"config":{
+"type":"vless",
+"tag":"V2RayServer (282)",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"server_port":443,
+"uuid":"56e89ac6-d36c-461e-b100-f59a40189f06",
+"multiplex":{
+"enabled":false,
+"protocol":"h2mux",
+"max_streams":8
+},
+"transport":{
+"type":"ws",
+"path":"/zncgyaws",
+"headers":{
+"Host":"638914973967170643.malayer-prx-dnraabv.info"
+}
+},
+"tls":{
+"enabled":true,
+"server_name":"638914973967170643.malayer-prx-dnraabv.info"
+}
+}
+},
+{
+"name":"V2RayServer (299)",
+"type":"vless",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"port":443,
+"ping":716,
+"config":{
+"type":"vless",
+"tag":"V2RayServer (299)",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"server_port":443,
+"uuid":"e445d701-471a-4fd4-b2be-eb4e8b43cd31",
+"multiplex":{
+"enabled":false,
+"protocol":"h2mux",
+"max_streams":8
+},
+"transport":{
+"type":"ws",
+"path":"/gifsxtws",
+"headers":{
+"Host":"638914974005854339.mashhad-prx-dnraabv.info"
+}
+},
+"tls":{
+"enabled":true,
+"server_name":"638914974005854339.mashhad-prx-dnraabv.info"
+}
+}
+},
+{
+"name":"V2RayServer (335)",
+"type":"vless",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"port":443,
+"ping":1234,
+"config":{
+"type":"vless",
+"tag":"V2RayServer (335)",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"server_port":443,
+"uuid":"beacc90a-8249-405a-babe-18dcdc72acad",
+"multiplex":{
+"enabled":false,
+"protocol":"h2mux",
+"max_streams":8
+},
+"transport":{
+"type":"ws",
+"path":"/lcfhkaws",
+"headers":{
+"Host":"638913960262162671.esfahan-prx-dnraabv.info"
+}
+},
+"tls":{
+"enabled":true,
+"server_name":"638913960262162671.esfahan-prx-dnraabv.info"
+}
+}
+},
+{
+"name":"V2RayServer (342)",
+"type":"vless",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"port":443,
+"ping":490,
+"config":{
+"type":"vless",
+"tag":"V2RayServer (342)",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"server_port":443,
+"uuid":"a3eb5fef-d11f-4bc4-a8eb-2b0069fb0b68",
+"multiplex":{
+"enabled":false,
+"protocol":"h2mux",
+"max_streams":8
+},
+"transport":{
+"type":"ws",
+"path":"/jzonrlws",
+"headers":{
+"Host":"638913960857625878.hamedan-prx-dnraabv.info"
+}
+},
+"tls":{
+"enabled":true,
+"server_name":"638913960857625878.hamedan-prx-dnraabv.info"
+}
+}
+},
+{
+"name":"V2RayServer (346)",
+"type":"vless",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"port":443,
+"ping":458,
+"config":{
+"type":"vless",
+"tag":"V2RayServer (346)",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"server_port":443,
+"uuid":"671befd4-606a-4bb4-b571-fa7b0b860c95",
+"multiplex":{
+"enabled":false,
+"protocol":"h2mux",
+"max_streams":8
+},
+"transport":{
+"type":"ws",
+"path":"/hanmhews",
+"headers":{
+"Host":"638915687281487776.kish-prx-dnraabv.info"
+}
+},
+"tls":{
+"enabled":true,
+"server_name":"638915687281487776.kish-prx-dnraabv.info"
+}
+}
+},
+{
+"name":"V2RayServer (347)",
+"type":"vless",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"port":443,
+"ping":535,
+"config":{
+"type":"vless",
+"tag":"V2RayServer (347)",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"server_port":443,
+"uuid":"d633dc6a-8431-4d4e-ba04-1fd44be06b34",
+"multiplex":{
+"enabled":false,
+"protocol":"h2mux",
+"max_streams":8
+},
+"transport":{
+"type":"ws",
+"path":"/rmmngwws",
+"headers":{
+"Host":"638915687281471928.kish-prx-dnraabv.info"
+}
+},
+"tls":{
+"enabled":true,
+"server_name":"638915687281471928.kish-prx-dnraabv.info"
+}
+}
+},
+{
+"name":"V2RayServer (353)",
+"type":"vless",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"port":443,
+"ping":1317,
+"config":{
+"type":"vless",
+"tag":"V2RayServer (353)",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"server_port":443,
+"uuid":"6fe4cdfd-11a8-4d3b-94a4-4b735da523de",
+"multiplex":{
+"enabled":false,
+"protocol":"h2mux",
+"max_streams":8
+},
+"transport":{
+"type":"ws",
+"path":"/ajnexnws",
+"headers":{
+"Host":"638913960263965784.gorgan-prx-dnraabv.info"
+}
+},
+"tls":{
+"enabled":true,
+"server_name":"638913960263965784.gorgan-prx-dnraabv.info"
+}
+}
+},
+{
+"name":"V2RayServer (375)",
+"type":"vless",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"port":443,
+"ping":473,
+"config":{
+"type":"vless",
+"tag":"V2RayServer (375)",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"server_port":443,
+"uuid":"3e5e1d6a-0bf8-48e4-bc18-3b1430df5f71",
+"multiplex":{
+"enabled":false,
+"protocol":"h2mux",
+"max_streams":8
+},
+"transport":{
+"type":"ws",
+"path":"/ykrxodws",
+"headers":{
+"Host":"638912109263482055.esfahan-prx-dnraabs.info"
+}
+},
+"tls":{
+"enabled":true,
+"server_name":"638912109263482055.esfahan-prx-dnraabs.info"
+}
+}
+},
+{
+"name":"V2RayServer (377)",
+"type":"vless",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"port":443,
+"ping":1291,
+"config":{
+"type":"vless",
+"tag":"V2RayServer (377)",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"server_port":443,
+"uuid":"19b98f12-13df-4315-bcdd-891d342a7bda",
+"multiplex":{
+"enabled":false,
+"protocol":"h2mux",
+"max_streams":8
+},
+"transport":{
+"type":"ws",
+"path":"/afrcsiws",
+"headers":{
+"Host":"638913960263958170.gorgan-prx-dnraabv.info"
+}
+},
+"tls":{
+"enabled":true,
+"server_name":"638913960263958170.gorgan-prx-dnraabv.info"
+}
+}
+},
+{
+"name":"V2RayServer (380)",
+"type":"vless",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"port":443,
+"ping":516,
+"config":{
+"type":"vless",
+"tag":"V2RayServer (380)",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"server_port":443,
+"uuid":"ac5f734e-cab3-4434-bb1a-5e25b499d387",
+"multiplex":{
+"enabled":false,
+"protocol":"h2mux",
+"max_streams":8
+},
+"transport":{
+"type":"ws",
+"path":"/zpuhsaws",
+"headers":{
+"Host":"638914973967189965.malayer-prx-dnraabv.info"
+}
+},
+"tls":{
+"enabled":true,
+"server_name":"638914973967189965.malayer-prx-dnraabv.info"
+}
+}
+},
+{
+"name":"V2RayServer (389)",
+"type":"vless",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"port":443,
+"ping":2530,
+"config":{
+"type":"vless",
+"tag":"V2RayServer (389)",
+"server":"ipw.gfdv54cvghhgfhgj-njhgj64.info",
+"server_port":443,
+"uuid":"4bfaaa67-69fd-4f84-8e44-065bfeef3864",
+"multiplex":{
+"enabled":false,
+"protocol":"h2mux",
+"max_streams":8
+},
+"transport":{
+"type":"ws",
+"path":"/ncxwxsws",
+"headers":{
+"Host":"638913960260188441.dezful-prx-dnraabv.info"
+}
+},
+"tls":{
+"enabled":true,
+"server_name":"638913960260188441.dezful-prx-dnraabv.info"
+}
+}
+}
+]
+    ],
+    "route": {
+        "rules": [
+            {
+                "protocol": "dns",
+                "outbound": "dns-out"
+            },
+            {
+                "ip_is_private": true,
+                "outbound": "direct"
+            }
+        ],
+        "final": "proxy",
+        "auto_detect_interface": true,
+        "override_android_vpn": true
+    },
+    "experimental": {
+        "cache_file": {
+            "enabled": true,
+            "store_rdrc": true
+        }
+    }
+}
